@@ -26,7 +26,7 @@ const checkMxRecords = (email) => {
 exports.register = async (req, res) => {
   try {
     console.log('Received registration request body:', req.body);
-    const { name, email, password, role, businessName, address } = req.body;
+    const { name, email, password, role, address } = req.body;
     // Basic required checks for top-level fields only
     if (!name || !email || !password || !role) {
       return res.status(400).json({ msg: 'Please enter all required fields.' });
@@ -48,10 +48,36 @@ exports.register = async (req, res) => {
     } : { street: '', city: '', state: '', zipCode: '' };
 
     let Model;
+    let userData;
+
+    const otp = generateOtp();
+    const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     if (role === 'vendor') {
       Model = VendorUser;
+      userData = {
+        name,
+        email,
+        password: hashedPassword,
+        address: safeAddress,
+        role,
+        otp,
+        otpExpires,
+        isVerified: false,
+      };
     } else if (role === 'supplier') {
       Model = SupplierUser;
+      userData = {
+        email,
+        password: hashedPassword,
+        companyName: name, // Use name for companyName
+        address: safeAddress,
+        role,
+        otp,
+        otpExpires,
+        isVerified: false,
+      };
     } else {
       return res.status(400).json({ msg: 'Invalid role specified.' });
     }
@@ -61,16 +87,16 @@ exports.register = async (req, res) => {
       if (!user.isVerified) {
         console.log('User exists but not verified. Resending OTP.');
         // If user exists but not verified, resend OTP
-        const otp = generateOtp();
-        const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const newOtp = generateOtp();
+        const newOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
         user = await Model.findByIdAndUpdate(
           user._id,
-          { $set: { otp: otp, otpExpires: otpExpires } },
+          { $set: { otp: newOtp, otpExpires: newOtpExpires } },
           { new: true, runValidators: false } // Do not run validators on update
         );
 
-        const message = `Your OTP for StreetFood Connect registration is: ${otp}. It is valid for 10 minutes.`;
+        const message = `Your OTP for StreetFood Connect registration is: ${newOtp}. It is valid for 10 minutes.`;
         try {
           await sendEmail({
             email: user.email,
@@ -88,44 +114,15 @@ exports.register = async (req, res) => {
       return res.status(400).json({ msg: 'User already exists and is verified.' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const otp = generateOtp();
-    const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    if (role === 'supplier') {
-      if (!businessName) {
-        return res.status(400).json({ msg: 'A business name is required for suppliers.' });
-      }
-      user = new Model({
-        email,
-        password: hashedPassword,
-        companyName: businessName,
-        address: safeAddress,
-        role,
-        otp,
-        otpExpires,
-        isVerified: false,
-      });
-    } else { // For vendor
-      user = new Model({
-        name,
-        email,
-        password: hashedPassword,
-        businessName,
-        address: safeAddress,
-        role,
-        otp,
-        otpExpires,
-        isVerified: false,
-      });
-    }
+    user = new Model(userData);
 
     console.log('Attempting to save new user:', user.email);
     await user.save();
     console.log('User saved successfully.');
 
-    const message = `Your OTP for StreetFood Connect registration is: ${otp}. It is valid for 10 minutes.`;
+    // Send OTP email but do not block the response if it fails
     try {
+      const message = `Your OTP for StreetFood Connect registration is: ${otp}. It is valid for 10 minutes.`;
       await sendEmail({
         email: user.email,
         subject: 'StreetFood Connect OTP Verification',
@@ -133,8 +130,9 @@ exports.register = async (req, res) => {
       });
       console.log('OTP sent successfully to:', user.email);
     } catch (emailErr) {
-      console.error('Error sending OTP email (new user):', emailErr);
-      return res.status(500).json({ msg: 'Failed to send OTP email.' });
+      console.error('CRITICAL: Failed to send OTP email to new user:', user.email, 'Error:', emailErr);
+      // We don't send a 500 error to the client here because the user has been created.
+      // The client can proceed to a "resend OTP" screen.
     }
 
     res.status(201).json({ msg: 'Registration successful! OTP sent to your email for verification.' });
