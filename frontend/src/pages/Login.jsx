@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('vendor');
+  const [role, setRole] = useState('buyer');
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotPasswordDialogOpen, setIsForgotPasswordDialogOpen] = useState(false); // NEW
   const { login, isAuthenticated } = useAuth();
@@ -38,16 +38,16 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div 
-                onClick={() => setRole('vendor')}
-                className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${role === 'vendor' ? 'border-primary' : 'border-muted'}`}
+                onClick={() => setRole('buyer')}
+                className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${role === 'buyer' ? 'border-primary' : 'border-muted'}`}
               >
-                Vendor
+                Buyer
               </div>
               <div 
-                onClick={() => setRole('supplier')}
-                className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${role === 'supplier' ? 'border-primary' : 'border-muted'}`}
+                onClick={() => setRole('artisan')}
+                className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${role === 'artisan' ? 'border-primary' : 'border-muted'}`}
               >
-                Supplier
+                Artisan
               </div>
             </div>
             <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
@@ -79,7 +79,5 @@ const Login = () => {
     </div>
   );
 };
-
-
 
 export default Login;

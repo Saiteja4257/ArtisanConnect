@@ -11,17 +11,18 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Products from './pages/Products';
 import Orders from './pages/Orders';
-import SupplierDashboard from './pages/SupplierDashboard';
-import SupplierProfile from './pages/SupplierProfile';
+import ArtisanDashboard from './pages/ArtisanDashboard';
+import ArtisanProfile from './pages/ArtisanProfile';
 import NotFound from './pages/NotFound';
 import MapSearch from './pages/MapSearch';
-import VendorProfile from './pages/VendorProfile';
-import SupplierProfilePage from './pages/SupplierProfilePage';
+import BuyerProfile from './pages/BuyerProfile';
+import ArtisanProfilePage from './pages/ArtisanProfilePage';
 import MyProductsPage from './pages/MyProductsPage';
 import ProductDetail from './pages/ProductDetail';
 import ChatPage from './pages/ChatPage';
 import InboxPage from './pages/InboxPage';
 import CompletedOrdersPage from './pages/CompletedOrdersPage';
+import ArtisanOrdersPage from './pages/ArtisanOrdersPage'; // NEW: Import ArtisanOrdersPage
 
 const queryClient = new QueryClient();
 
@@ -41,15 +42,16 @@ function App() {
               <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
               <Route path="/products/:id" element={<ProductDetail />} />
               <Route path="/map-search" element={<MapSearch />} />
-              <Route path="/suppliers/:id" element={<SupplierProfile />} />
-              <Route path="/orders" element={<ProtectedRoute allowedRoles={['vendor', 'customer']}><Orders /></ProtectedRoute>} />
-              <Route path="/supplier" element={<ProtectedRoute allowedRoles={['supplier']}><SupplierDashboard /></ProtectedRoute>} />
+              <Route path="/artisans/:id" element={<ArtisanProfile />} />
+              <Route path="/orders" element={<ProtectedRoute allowedRoles={['buyer']}><Orders /></ProtectedRoute>} />
+              <Route path="/artisan" element={<ProtectedRoute allowedRoles={['artisan']}><ArtisanDashboard /></ProtectedRoute>} />
               
-              <Route path="/profile" element={<ProtectedRoute><VendorProfile /></ProtectedRoute>} />
-              <Route path="/supplier-profile-page" element={<ProtectedRoute allowedRoles={['supplier']}><SupplierProfilePage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><BuyerProfile /></ProtectedRoute>} />
+              <Route path="/artisan-profile-page" element={<ProtectedRoute allowedRoles={['artisan']}><ArtisanProfilePage /></ProtectedRoute>} />
 
-              <Route path="/my-products" element={<ProtectedRoute allowedRoles={['supplier']}><MyProductsPage /></ProtectedRoute>} />
-              <Route path="/completed-orders" element={<ProtectedRoute allowedRoles={['supplier']}><CompletedOrdersPage /></ProtectedRoute>} />
+              <Route path="/my-products" element={<ProtectedRoute allowedRoles={['artisan']}><MyProductsPage /></ProtectedRoute>} />
+              <Route path="/artisan-orders" element={<ProtectedRoute allowedRoles={['artisan']}><ArtisanOrdersPage /></ProtectedRoute>} /> {/* NEW: Artisan Orders Page */}
+              <Route path="/completed-orders" element={<ProtectedRoute allowedRoles={['artisan']}><CompletedOrdersPage /></ProtectedRoute>} />
 
               <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
               <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />

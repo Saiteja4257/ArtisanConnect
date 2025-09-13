@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
-const VendorUser = require('./VendorUser');
-const SupplierUser = require('./SupplierUser');
+const BuyerUser = require('./BuyerUser');
+const ArtisanUser = require('./ArtisanUser');
 
 // NEW: Schema for individual reviews
 const ReviewSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'VendorUser', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'BuyerUser', required: true },
   userName: { type: String, required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true },
@@ -21,44 +21,41 @@ const ProductSchema = new mongoose.Schema({
   minOrderQty: { type: Number, required: true },
   availableQty: { type: Number, default: 0 },
   isPrepped: { type: Boolean, default: false },
-  supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'SupplierUser', required: true },
+  artisan: { type: mongoose.Schema.Types.ObjectId, ref: 'ArtisanUser', required: true },
   location: {
     lat: { type: Number },
     lng: { type: Number },
   },
   reviews: [ReviewSchema], // NEW
   averageRating: { type: Number, default: 0 }, // NEW
+  shipping: { // NEW: Shipping information
+    zones: [{ type: String }], // e.g., ['US', 'CA', 'MX'] or ['International']
+    cost: { type: Number, default: 0 }
+  }
 }, { timestamps: true });
 
-const GroupOrderSchema = new mongoose.Schema({
+const DirectOrderSchema = new mongoose.Schema({
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-  targetQty: { type: Number, required: true },
-  currentQty: { type: Number, default: 0 },
-  // Expanded statuses to support supplier approval flow and delivery tracking
+  quantity: { type: Number, required: true }, // Quantity for direct order
+  buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'BuyerUser', required: true }, // Buyer of the order
   status: { type: String, enum: ['open', 'approved', 'processing', 'completed', 'delivered', 'cancelled', 'rejected'], default: 'open' },
   deliveryDate: { type: Date },
-  // Captured when supplier approves the order so vendor can route to supplier
-  supplierLocation: {
+  artisanLocation: {
     lat: { type: Number },
     lng: { type: Number }
   },
-  supplierApproved: { type: Boolean, default: false },
-  participants: [{
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'VendorUser', required: true },
-    quantity: { type: Number, required: true },
-    _id: false
-  }],
-  cancellationMessage: { type: String }, // NEW: For vendor cancellation reason
+  artisanApproved: { type: Boolean, default: false },
+  cancellationMessage: { type: String },
 }, { timestamps: true });
 
 const Conversation = require('./Conversation');
 const Message = require('./Message');
 
 module.exports = {
-  VendorUser,
-  SupplierUser,
+  BuyerUser,
+  ArtisanUser,
   Product: mongoose.model('Product', ProductSchema),
-  GroupOrder: mongoose.model('GroupOrder', GroupOrderSchema),
+  DirectOrder: mongoose.model('DirectOrder', DirectOrderSchema),
   Conversation,
   Message,
 };

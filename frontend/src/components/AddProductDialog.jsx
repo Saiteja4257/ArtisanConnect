@@ -35,6 +35,8 @@ const AddProductDialog = ({ isOpen, onClose, productToEdit }) => {
     availableQty: '',
     image: null, // For new file upload
     imageUrl: '', // For existing image URL
+    shippingZones: '', // NEW
+    shippingCost: '', // NEW
   });
 
   useEffect(() => {
@@ -49,11 +51,13 @@ const AddProductDialog = ({ isOpen, onClose, productToEdit }) => {
         isPrepped: productToEdit.isPrepped || false,
         availableQty: productToEdit.availableQty || '',
         image: null, // No file selected initially for edit
-        imageUrl: productToEdit.imageUrl || '', // Existing image URL
+        imageUrl: productToEdit.imageUrl || '',
+        shippingZones: productToEdit.shipping?.zones?.join(', ') || '', // NEW
+        shippingCost: productToEdit.shipping?.cost || '', // NEW
       });
     } else {
       // Reset form for add mode
-      setFormData({ name: '', description: '', pricePerKg: '', category: '', unit: 'kg', minOrderQty: '', isPrepped: false, availableQty: '', image: null, imageUrl: '' });
+      setFormData({ name: '', description: '', pricePerKg: '', category: '', unit: 'kg', minOrderQty: '', isPrepped: false, availableQty: '', image: null, imageUrl: '', shippingZones: '', shippingCost: '' });
     }
   }, [productToEdit]);
 
@@ -184,6 +188,17 @@ const AddProductDialog = ({ isOpen, onClose, productToEdit }) => {
             <Switch id="isPrepped" checked={formData.isPrepped} onCheckedChange={handleSwitchChange} />
             <Label htmlFor="isPrepped">Is this a pre-prepared item? (e.g., batter)</Label>
           </div>
+
+          {/* NEW: Shipping Zones and Cost */}
+          <div className="space-y-2">
+            <Label htmlFor="shippingZones">Shipping Zones (comma-separated)</Label>
+            <Input id="shippingZones" name="shippingZones" value={formData.shippingZones} onChange={handleChange} placeholder="e.g., North, South, East, West" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="shippingCost">Shipping Cost</Label>
+            <Input id="shippingCost" name="shippingCost" type="number" value={formData.shippingCost} onChange={handleChange} />
+          </div>
+
           <DialogFooter>
             <Button type="submit" disabled={isPending}>
               {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

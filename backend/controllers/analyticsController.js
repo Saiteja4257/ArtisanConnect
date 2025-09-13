@@ -1,15 +1,15 @@
-const { GroupOrder, Product } = require('../models/model');
+const { GroupOrder, Product, DirectOrder } = require('../models/model');
 const mongoose = require('mongoose');
 
-exports.getSupplierAnalytics = async (req, res) => {
+exports.getArtisanAnalytics = async (req, res) => {
   try {
-    const supplierId = new mongoose.Types.ObjectId(req.user.id);
+    const artisanId = new mongoose.Types.ObjectId(req.user.id);
 
     // 1. Monthly Revenue (for the last 12 months)
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-    const monthlyRevenue = await GroupOrder.aggregate([
+    const monthlyRevenue = await DirectOrder.aggregate([
       {
         $lookup: {
           from: 'products',
@@ -21,7 +21,7 @@ exports.getSupplierAnalytics = async (req, res) => {
       { $unwind: '$product' },
       {
         $match: {
-          'product.supplier': supplierId,
+          'product.artisan': artisanId,
           status: { $in: ['completed', 'delivered'] },
           updatedAt: { $gte: twelveMonthsAgo }
         }
@@ -54,7 +54,7 @@ exports.getSupplierAnalytics = async (req, res) => {
     ]);
 
     // 2. Top Selling Products
-    const topProducts = await GroupOrder.aggregate([
+    const topProducts = await DirectOrder.aggregate([
       {
         $lookup: {
           from: 'products',
@@ -66,7 +66,7 @@ exports.getSupplierAnalytics = async (req, res) => {
       { $unwind: '$product' },
       {
         $match: {
-          'product.supplier': supplierId,
+          'product.artisan': artisanId,
           status: { $in: ['completed', 'delivered'] }
         }
       },
@@ -84,7 +84,7 @@ exports.getSupplierAnalytics = async (req, res) => {
     res.json({ monthlyRevenue, topProducts });
 
   } catch (err) {
-    console.error('Error fetching supplier analytics:', err);
+    console.error('Error fetching artisan analytics:', err);
     res.status(500).json({ msg: 'Server Error' });
   }
 };

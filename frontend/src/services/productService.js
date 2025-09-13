@@ -28,7 +28,7 @@ export const updateProduct = (productId, data) => {
 };
 
 /**
- * Fetches only the products listed by the currently logged-in supplier.
+ * Fetches only the products listed by the currently logged-in artisan.
  */
 export const getMyProducts = () => {
   return api.get('/products/my-products');
@@ -46,22 +46,26 @@ export const addProductReview = (productId, reviewData) => {
 // New: fetch products that are prepared
 export const getPreparedProducts = () => getProducts({ prepared: true });
 
-// New: fetch supplier profile by id
-export const getSupplierProfile = (supplierId) => {
-  return api.get(`/suppliers/${supplierId}`);
+// New: fetch artisan profile by id
+export const getArtisanProfile = (artisanId) => {
+  return api.get(`/artisans/${artisanId}`);
 };
 
-// Update supplier coords (must be supplier or authorized)
-export const updateSupplierCoords = (supplierId, coords) => {
-  return api.put(`/suppliers/${supplierId}/coords`, coords);
+// Update artisan coords (must be artisan or authorized)
+export const updateArtisanCoords = (artisanId, coords) => {
+  return api.put(`/artisans/${artisanId}/coords`, coords);
 };
 
-export const getNearbySuppliers = (lat, lng, radiusKm = 50, productId) => {
+export const getNearbyArtisans = (lat, lng, radiusKm = 50, productId) => {
   const params = { lat, lng, radiusKm };
   if (productId) params.productId = productId;
-  return api.get('/suppliers', { params });
+  return api.get('/artisans', { params });
 };
 
 export const deleteProduct = (productId) => {
   return api.delete(`/products/${productId}`);
+};
+
+export const getArtisanLocations = () => {
+  return api.get('/artisans/locations');
 };

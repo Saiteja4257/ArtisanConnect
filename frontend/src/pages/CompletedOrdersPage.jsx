@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { getSupplierGroupOrders } from '../services/orderService';
+import { getArtisanGroupOrders } from '../services/orderService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
 
 const CompletedOrdersPage = () => {
   const { data: ordersData, isLoading: isLoadingOrders, isError: isOrdersError } = useQuery({
-    queryKey: ['supplierGroupOrders'],
-    queryFn: getSupplierGroupOrders,
+    queryKey: ['artisanGroupOrders'],
+    queryFn: getArtisanGroupOrders,
   });
   const groupOrders = ordersData?.data || [];
   const completedOrders = groupOrders.filter(order => order.status === 'completed' || order.status === 'delivered');
@@ -27,7 +27,7 @@ const CompletedOrdersPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product Name</TableHead>
-                  <TableHead>Vendor Name</TableHead>
+                  <TableHead>Buyer Name</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Status</TableHead>

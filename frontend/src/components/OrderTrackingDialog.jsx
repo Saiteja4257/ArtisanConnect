@@ -52,10 +52,10 @@ const OrderTrackingDialog = ({ orderId, isOpen, onClose }) => {
     }
   }, [isOpen]);
 
-  const supplierLocation = orderSummary?.supplierLocation;
-  const center = supplierLocation || userLocation;
-  // Map is considered ready when we have orderSummary and at least one of userLocation or supplierLocation
-  const isMapDataAvailable = !!orderSummary && (!!userLocation || !!supplierLocation);
+  const artisanLocation = orderSummary?.artisanLocation;
+  const center = artisanLocation || userLocation;
+  // Map is considered ready when we have orderSummary and at least one of userLocation or artisanLocation
+  const isMapDataAvailable = !!orderSummary && (!!userLocation || !!artisanLocation);
 
   const handleRouteFound = (summary) => {
     setRouteSummary(summary);
@@ -78,8 +78,8 @@ const OrderTrackingDialog = ({ orderId, isOpen, onClose }) => {
               <div className="h-64 mb-4 relative">
                 {mapError ? (
                   <p className="text-destructive">{mapError}</p>
-                ) : !supplierLocation ? (
-                  <div className="flex justify-center items-center h-full"><p>Supplier location not available for tracking. Please contact the supplier.</p></div>
+                ) : !artisanLocation ? (
+                  <div className="flex justify-center items-center h-full"><p>Artisan location not available for tracking. Please contact the artisan.</p></div>
                 ) : !userLocation ? (
                   <div className="flex justify-center items-center h-full"><p>Your location is not available. Please enable geolocation or set your address in your profile to see the route.</p></div>
                 ) : (center && typeof center.lat === 'number' && typeof center.lng === 'number') ? (
@@ -89,17 +89,17 @@ const OrderTrackingDialog = ({ orderId, isOpen, onClose }) => {
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
                     {(userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number' &&
-                      supplierLocation && typeof supplierLocation.lat === 'number' && typeof supplierLocation.lng === 'number') && (
+                      artisanLocation && typeof artisanLocation.lat === 'number' && typeof artisanLocation.lng === 'number') && (
                       <RoutingMachine
                         start={[userLocation.lat, userLocation.lng]}
-                        end={[supplierLocation.lat, supplierLocation.lng]}
+                        end={[artisanLocation.lat, artisanLocation.lng]}
                         onRouteFound={handleRouteFound}
                         // apiKey={googleMapsApiKey} // Pass the API key here
                       />
                     )}
                   </MapContainer>
                 ) : (
-                  <div className="flex justify-center items-center h-full"><p>Map data not fully available. Ensure both your location and supplier location are set.</p></div>
+                  <div className="flex justify-center items-center h-full"><p>Map data not fully available. Ensure both your location and artisan location are set.</p></div>
                 )}
                 {routeSummary && (
                   <div className="absolute bottom-2 left-2 bg-white p-2 rounded shadow-lg text-xs">

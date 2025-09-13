@@ -8,7 +8,7 @@ const Home = () => {
     <div className="text-center py-16">
       <h1 className="text-4xl font-bold mb-4">Connect. Order. Grow.</h1>
       <p className="text-xl text-muted-foreground mb-8">
-        The digital platform connecting street food vendors with trusted suppliers.
+        The digital platform connecting artisans with buyers.
       </p>
       {isAuthenticated ? (
         <Button asChild><Link to="/products">Browse Products</Link></Button>

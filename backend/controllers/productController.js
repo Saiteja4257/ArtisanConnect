@@ -1,12 +1,13 @@
-const { Product, SupplierUser, VendorUser } = require('../models/model');
+const { Product, ArtisanUser, BuyerUser } = require('../models/model');
 const mongoose = require('mongoose');
+const { getExchangeRate } = require('../utils/currencyConverter');
 
 exports.createProduct = async (req, res) => {
   try {
     console.log('Received product creation request body:', req.body);
     console.log('Received product image file:', req.file);
     // Accept both multipart file upload (req.file) and JSON body with base64 image (req.body.image)
-    const { name, description, pricePerKg, category, unit, minOrderQty, isPrepped, availableQty } = req.body;
+    const { name, description, pricePerKg, category, unit, minOrderQty, isPrepped, availableQty, shippingZones, shippingCost } = req.body;
     // prefer req.file (Cloudinary) if present, otherwise accept base64 image string from body
     const imageUrl = req.file ? req.file.path : (req.body.image || null);
 
@@ -27,7 +28,11 @@ exports.createProduct = async (req, res) => {
       minOrderQty: Number(minOrderQty),
       availableQty: availableQty ? Number(availableQty) : 0,
       isPrepped: isPrepped === 'true' || isPrepped === true,
-      supplier: req.user.id
+      artisan: req.user.id,
+      shipping: {
+        zones: shippingZones ? shippingZones.split(',').map(zone => zone.trim()) : [],
+        cost: shippingCost ? Number(shippingCost) : 0
+      }
     });
     await product.save();
     res.status(201).json(product);
@@ -39,7 +44,7 @@ exports.createProduct = async (req, res) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { prepared, search, minPrice, maxPrice, minRating, sortBy, sortOrder } = req.query;
+    const { prepared, search, minPrice, maxPrice, minRating, sortBy, sortOrder, targetCurrency } = req.query;
     let filter = {};
     let sort = {};
 
@@ -61,17 +66,17 @@ exports.getProducts = async (req, res) => {
       filter.pricePerKg = { ...filter.pricePerKg, $lte: Number(maxPrice) };
     }
 
-    // For minRating, we need to populate suppliers and then filter
+    // For minRating, we need to populate artisans and then filter
     let productsQuery = Product.find(filter);
 
     if (minRating) {
-      // Populate supplier to access averageRating
+      // Populate artisan to access averageRating
       productsQuery = productsQuery.populate({
-        path: 'supplier',
-        select: 'name businessName address averageRating', // Ensure averageRating is selected
+        path: 'artisan',
+        select: 'name address averageRating', // Ensure averageRating is selected
       });
     } else {
-      productsQuery = productsQuery.populate('supplier', 'name businessName address');
+      productsQuery = productsQuery.populate('artisan', 'name address');
     }
 
     // Apply sorting
@@ -80,7 +85,7 @@ exports.getProducts = async (req, res) => {
       if (sortBy === 'price') {
         sort.pricePerKg = order;
       } else if (sortBy === 'rating') {
-        sort.averageRating = order; // Sort by supplier's average rating
+        sort.averageRating = order; // Sort by artisan's average rating
       }
     }
 
@@ -89,9 +94,23 @@ exports.getProducts = async (req, res) => {
     // Post-query filtering for minRating (since it's on populated field)
     if (minRating) {
       products = products.filter(product => {
-        // Ensure supplier and averageRating exist before comparing
-        return product.supplier && product.supplier.averageRating >= Number(minRating);
+        // Ensure artisan and averageRating exist before comparing
+        return product.artisan && product.artisan.averageRating >= Number(minRating);
       });
+    }
+
+    // Currency Conversion
+    if (targetCurrency && targetCurrency.toUpperCase() !== 'INR') { // Assuming base currency is INR
+      const exchangeRate = await getExchangeRate('INR', targetCurrency.toUpperCase());
+      if (exchangeRate) {
+        products = products.map(product => ({
+          ...product.toObject(), // Convert Mongoose document to plain object
+          pricePerKg: product.pricePerKg * exchangeRate,
+          convertedCurrency: targetCurrency.toUpperCase(),
+        }));
+      } else {
+        console.warn(`Could not fetch exchange rate for ${targetCurrency}. Prices will remain in INR.`);
+      }
     }
 
     res.json(products);
@@ -102,7 +121,7 @@ exports.getProducts = async (req, res) => {
 
 exports.getMyProducts = async (req, res) => {
   try {
-    const products = await Product.find({ supplier: req.user.id });
+    const products = await Product.find({ artisan: req.user.id });
     res.json(products);
   } catch (err) {
     res.status(500).json({ msg: err.message });
@@ -111,10 +130,27 @@ exports.getMyProducts = async (req, res) => {
 
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('supplier', 'name businessName address');
+    const { targetCurrency } = req.query;
+    const product = await Product.findById(req.params.id).populate('artisan', 'name address');
     if (!product) {
       return res.status(404).json({ msg: 'Product not found' });
     }
+
+    // Currency Conversion
+    if (targetCurrency && targetCurrency.toUpperCase() !== 'INR') { // Assuming base currency is INR
+      const exchangeRate = await getExchangeRate('INR', targetCurrency.toUpperCase());
+      if (exchangeRate) {
+        const convertedProduct = {
+          ...product.toObject(), // Convert Mongoose document to plain object
+          pricePerKg: product.pricePerKg * exchangeRate,
+          convertedCurrency: targetCurrency.toUpperCase(),
+        };
+        return res.json(convertedProduct);
+      } else {
+        console.warn(`Could not fetch exchange rate for ${targetCurrency}. Price will remain in INR.`);
+      }
+    }
+
     res.json(product);
   } catch (err) {
     console.error(err.message);
@@ -161,7 +197,7 @@ exports.createProductReview = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params; // Product ID
-    const { name, description, pricePerKg, category, unit, minOrderQty, isPrepped, availableQty } = req.body;
+    const { name, description, pricePerKg, category, unit, minOrderQty, isPrepped, availableQty, shippingZones, shippingCost } = req.body;
     const imageUrl = req.file ? req.file.path : (req.body.imageUrl || null); // Use imageUrl from body if no new file
 
     const product = await Product.findById(id);
@@ -171,7 +207,7 @@ exports.updateProduct = async (req, res) => {
     }
 
     // Ensure only the owner can update the product
-    if (product.supplier.toString() !== req.user.id) {
+    if (product.artisan.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Forbidden: You do not own this product.' });
     }
 
@@ -185,6 +221,8 @@ exports.updateProduct = async (req, res) => {
     if (typeof isPrepped !== 'undefined') product.isPrepped = isPrepped;
     if (availableQty) product.availableQty = Number(availableQty);
     if (imageUrl) product.imageUrl = imageUrl;
+    if (shippingZones) product.shipping.zones = shippingZones.split(',').map(zone => zone.trim());
+    if (shippingCost) product.shipping.cost = Number(shippingCost);
 
     await product.save();
 
@@ -205,7 +243,7 @@ exports.deleteProduct = async (req, res) => {
     }
 
     // Ensure only the owner can delete the product
-    if (product.supplier.toString() !== req.user.id) {
+    if (product.artisan.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Forbidden: You do not own this product.' });
     }
 

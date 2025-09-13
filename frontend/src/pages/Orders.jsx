@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Import useMutation, useQueryClient
-import { getMyGroupOrders, cancelOrder } from '../services/orderService'; // Import cancelOrder
+import { getMyDirectOrders, cancelOrder } from '../services/orderService'; // Import cancelOrder
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,24 +17,18 @@ const Orders = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient(); // Initialize queryClient
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [isModifyOpen, setIsModifyOpen] = useState(false);
   const [isTrackOpen, setIsTrackOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const { data: ordersData, isLoading, isError } = useQuery({
     queryKey: ['myOrders'],
-    queryFn: getMyGroupOrders,
+    queryFn: getMyDirectOrders,
   });
   const orders = ordersData?.data || [];
 
-  const handleModifyClick = (order) => {
-    setSelectedOrder(order);
-    setIsModifyOpen(true);
-  };
-
   const handleTrackClick = (order) => {
     if (order.status === 'open') {
-      toast({ title: "Waiting for supplier approval" });
+      toast({ title: "Waiting for artisan approval" });
     } else {
       setSelectedOrder(order);
       setIsTrackOpen(true);
@@ -47,13 +41,10 @@ const Orders = () => {
   };
 
   const OrderCard = ({ order }) => {
-    const progress = (order.currentQty / order.targetQty) * 100;
-    const userContribution = order.participants.find(p => p.user?._id === user._id);
-
-    const statusText = order.status === 'open' ? 'Waiting for Supplier Approval' : order.status;
+    const statusText = order.status === 'open' ? 'Waiting for Artisan Approval' : order.status;
 
     const cancelMutation = useMutation({
-      mutationFn: (orderId) => cancelOrder(orderId, "Vendor cancelled the order."), // Pass a default message
+      mutationFn: (orderId) => cancelOrder(orderId, "Buyer cancelled the order."), // Pass a default message
       onSuccess: () => {
         toast({ title: "Order Cancelled!", description: "The order has been removed from your list." });
         queryClient.invalidateQueries({ queryKey: ['myOrders'] }); // Refresh orders list
@@ -78,21 +69,10 @@ const Orders = () => {
           <CardDescription>Order ID: {order._id.substring(0, 8)}...</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Order Progress</span>
-              <span>{order.currentQty}/{order.targetQty} {order.productId?.unit}</span>
-            </div>
-            <Progress value={progress} />
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-sm">Quantity:</span>
+            <span className="font-bold text-lg">{order.quantity} {order.productId?.unit}</span>
           </div>
-          {userContribution && (
-            <div className="bg-muted/50 p-3 rounded-md">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-sm flex items-center"><Boxes className="w-4 h-4 mr-2" />Your Contribution</span>
-                <span className="font-bold text-lg">{userContribution.quantity} {order.productId?.unit}</span>
-              </div>
-            </div>
-          )}
           <div className="flex justify-end gap-2">
             {order.status === 'completed' ? (
               <Button size="sm" onClick={() => handleReviewClick(order)}>
@@ -104,9 +84,6 @@ const Orders = () => {
               </Button>
             )}
             
-            {order.status === 'open' && (
-              <Button size="sm" onClick={() => handleModifyClick(order)}>Modify</Button>
-            )}
             {(order.status === 'open' || order.status === 'approved') && (
               <Button size="sm" variant="destructive" onClick={handleCancelClick} disabled={cancelMutation.isPending}>
                 {cancelMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Cancel Order'}
@@ -174,11 +151,7 @@ const Orders = () => {
       </Tabs>
 
       {/* All dialogs are now included */}
-      <ModifyOrderDialog 
-        order={selectedOrder} 
-        isOpen={isModifyOpen} 
-        onClose={() => setIsModifyOpen(false)} 
-      />
+      
       <OrderTrackingDialog 
         orderId={selectedOrder?._id} 
         isOpen={isTrackOpen} 

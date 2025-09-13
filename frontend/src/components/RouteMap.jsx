@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Custom icons for vendor (green) and supplier (red)
+// Custom icons for buyer (green) and artisan (red)
 const greenIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -31,7 +31,7 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// NEW: Custom blue icon for current supplier when viewing another supplier's product
+// NEW: Custom blue icon for current artisan when viewing another artisan's product
 const blueIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -41,38 +41,38 @@ const blueIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const MapUpdater = ({ vendorCoords, supplierCoords }) => {
+const MapUpdater = ({ buyerCoords, artisanCoords }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (vendorCoords && supplierCoords) {
-      const bounds = L.latLngBounds([vendorCoords.lat, vendorCoords.lng], [supplierCoords.lat, supplierCoords.lng]);
+    if (buyerCoords && artisanCoords) {
+      const bounds = L.latLngBounds([buyerCoords.lat, buyerCoords.lng], [artisanCoords.lat, artisanCoords.lng]);
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [map, vendorCoords, supplierCoords]);
+  }, [map, buyerCoords, artisanCoords]);
 
   return null;
 };
 
-const RouteMap = ({ vendorCoords, supplierCoords, isDialogOpen, userRole }) => {
-  if (!vendorCoords || !supplierCoords) {
+const RouteMap = ({ buyerCoords, artisanCoords, isDialogOpen, userRole }) => {
+  if (!buyerCoords || !artisanCoords) {
     return <p>Loading map...</p>;
   }
 
   const position = [
-    [vendorCoords.lat, vendorCoords.lng],
-    [supplierCoords.lat, supplierCoords.lng]
+    [buyerCoords.lat, buyerCoords.lng],
+    [artisanCoords.lat, artisanCoords.lng]
   ];
 
   const distance = haversineDistance(
-    [vendorCoords.lat, vendorCoords.lng],
-    [supplierCoords.lat, supplierCoords.lng]
+    [buyerCoords.lat, buyerCoords.lng],
+    [artisanCoords.lat, artisanCoords.lng]
   ).toFixed(1);
 
   return (
     <div className="map-container">
       <MapContainer 
-        center={[vendorCoords.lat, vendorCoords.lng]} 
+        center={[buyerCoords.lat, buyerCoords.lng]} 
         zoom={13} 
         style={{ height: '400px', width: '100%' }} 
         scrollWheelZoom={false}
@@ -82,12 +82,12 @@ const RouteMap = ({ vendorCoords, supplierCoords, isDialogOpen, userRole }) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
         />
-        <MapUpdater vendorCoords={vendorCoords} supplierCoords={supplierCoords} />
-        <Marker position={[vendorCoords.lat, vendorCoords.lng]} icon={userRole === 'supplier' ? blueIcon : greenIcon}> {/* Conditional icon */}
-          <Popup>{userRole === 'supplier' ? 'Your Location' : 'Your Location'}</Popup>
+        <MapUpdater buyerCoords={buyerCoords} artisanCoords={artisanCoords} />
+        <Marker position={[buyerCoords.lat, buyerCoords.lng]} icon={userRole === 'artisan' ? blueIcon : greenIcon}> {/* Conditional icon */}
+          <Popup>{userRole === 'artisan' ? 'Your Location' : 'Your Location'}</Popup>
         </Marker>
-        <Marker position={[supplierCoords.lat, supplierCoords.lng]} icon={redIcon}>
-          <Popup>Supplier Location</Popup>
+        <Marker position={[artisanCoords.lat, artisanCoords.lng]} icon={redIcon}>
+          <Popup>Artisan Location</Popup>
         </Marker>
         <Polyline positions={position} color="blue" />
       </MapContainer>

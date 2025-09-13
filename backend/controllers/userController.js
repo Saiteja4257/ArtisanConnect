@@ -1,4 +1,4 @@
-const { VendorUser, SupplierUser, Product } = require('../models/model');
+const { BuyerUser, ArtisanUser, Product } = require('../models/model');
 const mongoose = require('mongoose');
 
 // Helper: haversine distance (km)
@@ -19,10 +19,10 @@ exports.getProfile = async (req, res) => {
   try {
     console.log('getProfile: req.user:', req.user);
     let user;
-    if (req.user.role === 'vendor') {
-      user = await VendorUser.findById(req.user.id).select('-password');
-    } else if (req.user.role === 'supplier') {
-      user = await SupplierUser.findById(req.user.id).select('-password');
+    if (req.user.role === 'buyer') {
+      user = await BuyerUser.findById(req.user.id).select('-password');
+    } else if (req.user.role === 'artisan') {
+      user = await ArtisanUser.findById(req.user.id).select('-password');
     } else {
       return res.status(400).json({ msg: 'Invalid user role.' });
     }
@@ -47,10 +47,10 @@ exports.updateProfileLocation = async (req, res) => {
     }
 
     let Model;
-    if (req.user.role === 'vendor') {
-      Model = VendorUser;
-    } else if (req.user.role === 'supplier') {
-      Model = SupplierUser;
+    if (req.user.role === 'buyer') {
+      Model = BuyerUser;
+    } else if (req.user.role === 'artisan') {
+      Model = ArtisanUser;
     } else {
       return res.status(400).json({ msg: 'Invalid user role.' });
     }
@@ -81,38 +81,38 @@ exports.updateProfileLocation = async (req, res) => {
   }
 };
 
-// New: Get supplier profile and their products
-exports.getSupplierProfile = async (req, res) => {
+// New: Get artisan profile and their products
+exports.getArtisanProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const supplier = await SupplierUser.findById(id).select('-password');
-    if (!supplier) return res.status(404).json({ msg: 'Supplier not found' });
+    const artisan = await ArtisanUser.findById(id).select('-password');
+    if (!artisan) return res.status(404).json({ msg: 'Artisan not found' });
 
-    const products = await Product.find({ supplier: id });
+    const products = await Product.find({ artisan: id });
 
     const averageRating = products.length
       ? products.reduce((acc, p) => acc + (p.averageRating || 0), 0) / products.length
       : 0;
 
-    res.json({ supplier, products, averageRating });
+    res.json({ artisan, products, averageRating });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
 };
 
-// Update supplier coords
-exports.updateSupplierCoords = async (req, res) => {
+// Update artisan coords
+exports.updateArtisanCoords = async (req, res) => {
   try {
     const { id } = req.params;
     const { lat, lng } = req.body;
     if (!lat || !lng) return res.status(400).json({ msg: 'lat and lng are required' });
 
-    // Only allow supplier to update their own coords
-    if (req.user.id !== id && req.user.role !== 'supplier') {
+    // Only allow artisan to update their own coords
+    if (req.user.id !== id && req.user.role !== 'artisan') {
       return res.status(403).json({ msg: 'Forbidden' });
     }
 
-    const user = await SupplierUser.findById(id);
+    const user = await ArtisanUser.findById(id);
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     user.address = user.address || {};
@@ -124,8 +124,8 @@ exports.updateSupplierCoords = async (req, res) => {
   }
 };
 
-// Get nearby suppliers (simple server-side Haversine filter)
-exports.getNearbySuppliers = async (req, res) => {
+// Get nearby artisans (simple server-side Haversine filter)
+exports.getNearbyArtisans = async (req, res) => {
   try {
     const { lat, lng, radiusKm = 50, productId } = req.query;
     if (!lat || !lng) return res.status(400).json({ msg: 'lat and lng query params required' });
@@ -134,33 +134,33 @@ exports.getNearbySuppliers = async (req, res) => {
     const lngNum = Number(lng);
     const radius = Number(radiusKm);
 
-    // If productId provided, fetch the product and only consider its supplier
+    // If productId provided, fetch the product and only consider its artisan
     if (productId) {
-      const product = await Product.findById(productId).populate('supplier', 'name businessName address');
+      const product = await Product.findById(productId).populate('artisan', 'name address');
       if (!product) return res.status(404).json({ msg: 'Product not found' });
-      const s = product.supplier;
+      const s = product.artisan;
       const coords = s?.address?.coords;
-      if (!coords) return res.json({ suppliers: [] });
+      if (!coords) return res.json({ artisans: [] });
       const distance = haversineDistance([latNum, lngNum], [coords.lat, coords.lng]);
       if (distance <= radius) {
-        return res.json({ suppliers: [{ supplier: s, distanceKm: distance } ] });
+        return res.json({ artisans: [{ artisan: s, distanceKm: distance } ] });
       }
-      return res.json({ suppliers: [] });
+      return res.json({ artisans: [] });
     }
 
-    // Otherwise fetch all suppliers and compute distance
-    const suppliers = await SupplierUser.find().select('name businessName address');
-    const result = suppliers
+    // Otherwise fetch all artisans and compute distance
+    const artisans = await ArtisanUser.find().select('name address');
+    const result = artisans
       .map(s => {
         const coords = s.address?.coords;
         if (!coords) return null;
         const distance = haversineDistance([latNum, lngNum], [coords.lat, coords.lng]);
-        return { supplier: s, distanceKm: distance };
+        return { artisan: s, distanceKm: distance };
       })
       .filter(x => x && x.distanceKm <= radius)
       .sort((a,b) => a.distanceKm - b.distanceKm);
 
-    res.json({ suppliers: result });
+    res.json({ artisans: result });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
@@ -170,23 +170,23 @@ exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    const { name, email, businessName, address } = req.body;
+    const { name, email, artisanName, address } = req.body;
 
     let Model;
-    if (userRole === 'vendor') {
-      Model = VendorUser;
-    } else if (userRole === 'supplier') {
-      Model = SupplierUser;
+    if (userRole === 'buyer') {
+      Model = BuyerUser;
+    } else if (userRole === 'artisan') {
+      Model = ArtisanUser;
     } else {
       return res.status(400).json({ msg: 'Invalid user role.' });
     }
 
     const updateFields = {};
 
-    if (userRole === 'vendor') {
+    if (userRole === 'buyer') {
       if (name) updateFields.name = name;
-    } else if (userRole === 'supplier') {
-      if (businessName) updateFields.companyName = businessName; // Supplier uses companyName
+    } else if (userRole === 'artisan') {
+      if (artisanName) updateFields.artisanName = artisanName; // Artisan uses artisanName
     }
 
     if (email) updateFields.email = email;
@@ -216,6 +216,16 @@ exports.updateProfile = async (req, res) => {
     res.status(200).json({ msg: 'Profile updated successfully', user: updatedUser });
   } catch (err) {
     console.error('Error updating profile:', err);
+    res.status(500).json({ msg: err.message });
+  }
+};
+
+exports.getArtisanLocations = async (req, res) => {
+  try {
+    const artisans = await ArtisanUser.find().select('_id artisanName address.coords');
+    res.json(artisans);
+  } catch (err) {
+    console.error('Error fetching artisan locations:', err);
     res.status(500).json({ msg: err.message });
   }
 };

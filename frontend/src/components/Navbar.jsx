@@ -34,7 +34,7 @@ const Navbar = () => {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <ShoppingCart className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold">StreetFood Connect</span>
+            <span className="text-xl font-bold">Artisan Connect</span>
           </Link>
 
           {isAuthenticated && (
@@ -42,9 +42,9 @@ const Navbar = () => {
               <Link to="/products" className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/products') ? 'text-primary' : 'text-muted-foreground'}`}>
                 Products
               </Link>
-              {user?.role === 'supplier' ? (
+              {user?.role === 'artisan' ? (
                 <>
-                 <Link to="/supplier" className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/supplier') ? 'text-primary' : 'text-muted-foreground'}`}>
+                 <Link to="/artisan" className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/artisan') ? 'text-primary' : 'text-muted-foreground'}`}>
                    Dashboard
                  </Link>
                  <Link to="/my-products" className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/my-products') ? 'text-primary' : 'text-muted-foreground'}`}>

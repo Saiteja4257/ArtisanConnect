@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, role) => {
     try {
       console.log('AuthContext login: Attempting login for', email);
-      const res = await authService.login({ email, password, role });
+      const res = await authService.login({ email, password });
       const { token, user: userData } = res.data;
       localStorage.setItem('token', token);
       const userWithToken = { ...userData, token }; // Add token to user object

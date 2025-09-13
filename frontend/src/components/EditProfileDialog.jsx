@@ -102,11 +102,11 @@ const EditProfileDialog = ({ isOpen, onClose, currentUser }) => {
     };
 
     // Remove fields that are empty strings or not applicable to the user's role
-    if (authUser.role === 'vendor') {
+    if (authUser.role === 'buyer') {
       delete dataToSend.businessName;
-    } else if (authUser.role === 'supplier') {
+    } else if (authUser.role === 'artisan') {
       delete dataToSend.name;
-      dataToSend.companyName = dataToSend.businessName; // Backend expects companyName for supplier
+      dataToSend.companyName = dataToSend.businessName; // Backend expects companyName for artisan
       delete dataToSend.businessName;
     }
 
@@ -123,13 +123,13 @@ const EditProfileDialog = ({ isOpen, onClose, currentUser }) => {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          {authUser.role === 'vendor' && (
+          {authUser.role === 'buyer' && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Name</Label>
               <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
             </div>
           )}
-          {authUser.role === 'supplier' && (
+          {authUser.role === 'artisan' && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="businessName" className="text-right">Business Name</Label>
               <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleChange} className="col-span-3" />

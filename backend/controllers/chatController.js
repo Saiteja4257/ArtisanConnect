@@ -2,31 +2,31 @@ const { Conversation, Message } = require('../models/model');
 
 exports.createOrGetConversation = async (req, res) => {
   try {
-    const { supplierId, productId } = req.params;
-    const userId = req.user.id; // Vendor or Supplier ID
+    const { artisanId, productId } = req.params;
+    const userId = req.user.id; // Buyer or Artisan ID
 
     // Determine participant models based on roles
     let participant1Model, participant2Model;
-    if (req.user.role === 'vendor') {
-      participant1Model = 'VendorUser';
-      participant2Model = 'SupplierUser';
-    } else if (req.user.role === 'supplier') {
-      participant1Model = 'SupplierUser';
-      participant2Model = 'VendorUser';
+    if (req.user.role === 'buyer') {
+      participant1Model = 'BuyerUser';
+      participant2Model = 'ArtisanUser';
+    } else if (req.user.role === 'artisan') {
+      participant1Model = 'ArtisanUser';
+      participant2Model = 'BuyerUser';
     } else {
       return res.status(400).json({ msg: 'Invalid user role for chat.' });
     }
 
     // Find existing conversation
     let conversation = await Conversation.findOne({
-      participants: { $all: [userId, supplierId] },
+      participants: { $all: [userId, artisanId] },
       participantModel: { $all: [participant1Model, participant2Model] }
     });
 
     if (!conversation) {
       // Create new conversation if not found
       conversation = new Conversation({
-        participants: [userId, supplierId],
+        participants: [userId, artisanId],
         participantModel: [participant1Model, participant2Model]
       });
       await conversation.save();
@@ -43,7 +43,7 @@ exports.sendMessage = async (req, res) => {
   try {
     const { conversationId, content } = req.body;
     const senderId = req.user.id;
-    const senderModel = req.user.role === 'vendor' ? 'VendorUser' : 'SupplierUser';
+    const senderModel = req.user.role === 'buyer' ? 'BuyerUser' : 'ArtisanUser';
 
     if (!conversationId || !content) {
       return res.status(400).json({ msg: 'Conversation ID and message content are required.' });
@@ -71,12 +71,12 @@ exports.sendMessage = async (req, res) => {
     conversation.lastMessage = message._id;
 
     // Update lastReadMessage for sender and recipient
-    if (senderModel === 'VendorUser') {
-      conversation.lastReadVendorMessage = message._id;
-      conversation.lastReadSupplierMessage = undefined; // Mark as unread for supplier
-    } else if (senderModel === 'SupplierUser') {
-      conversation.lastReadSupplierMessage = message._id;
-      conversation.lastReadVendorMessage = undefined; // Mark as unread for vendor
+    if (senderModel === 'BuyerUser') {
+      conversation.lastReadBuyerMessage = message._id;
+      conversation.lastReadArtisanMessage = undefined; // Mark as unread for artisan
+    } else if (senderModel === 'ArtisanUser') {
+      conversation.lastReadArtisanMessage = message._id;
+      conversation.lastReadBuyerMessage = undefined; // Mark as unread for buyer
     }
     await conversation.save();
 
@@ -91,21 +91,21 @@ exports.getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.role;
-    const userModel = userRole === 'vendor' ? 'VendorUser' : 'SupplierUser';
+    const userModel = userRole === 'buyer' ? 'BuyerUser' : 'ArtisanUser';
 
     let conversations = await Conversation.find({
       participants: userId,
     })
     .populate({
       path: 'participants',
-      select: 'name businessName email role',
+      select: 'name email role',
     })
     .populate('lastMessage')
-    .populate('lastReadVendorMessage')
-    .populate('lastReadSupplierMessage')
+    .populate('lastReadBuyerMessage')
+    .populate('lastReadArtisanMessage')
     .sort({ updatedAt: -1 });
 
-    // Filter conversations to ensure strict privacy (one vendor, one supplier)
+    // Filter conversations to ensure strict privacy (one buyer, one artisan)
     conversations = conversations.filter(conv => {
       // Ensure exactly two participants
       if (conv.participants.length !== 2) {
@@ -119,10 +119,10 @@ exports.getConversations = async (req, res) => {
         return false;
       }
 
-      if (userRole === 'vendor' && otherParticipant.role !== 'supplier') {
+      if (userRole === 'buyer' && otherParticipant.role !== 'artisan') {
         return false;
       }
-      if (userRole === 'supplier' && otherParticipant.role !== 'vendor') {
+      if (userRole === 'artisan' && otherParticipant.role !== 'buyer') {
         return false;
       }
 
@@ -133,10 +133,10 @@ exports.getConversations = async (req, res) => {
       let unreadCount = 0;
       let lastReadMessageId = null;
 
-      if (userRole === 'vendor') {
-        lastReadMessageId = conv.lastReadVendorMessage ? conv.lastReadVendorMessage._id.toString() : null;
-      } else if (userRole === 'supplier') {
-        lastReadMessageId = conv.lastReadSupplierMessage ? conv.lastReadSupplierMessage._id.toString() : null;
+      if (userRole === 'buyer') {
+        lastReadMessageId = conv.lastReadBuyerMessage ? conv.lastReadBuyerMessage._id.toString() : null;
+      } else if (userRole === 'artisan') {
+        lastReadMessageId = conv.lastReadArtisanMessage ? conv.lastReadArtisanMessage._id.toString() : null;
       }
 
       // If there's a last message and it's different from the last read message, it's unread
@@ -171,7 +171,7 @@ exports.getMessages = async (req, res) => {
     }
 
     const messages = await Message.find({ conversation: conversationId })
-      .populate('sender', 'name businessName role')
+      .populate('sender', 'name role')
       .sort({ createdAt: 1 });
 
     res.status(200).json(messages);
@@ -201,10 +201,10 @@ exports.markConversationAsRead = async (req, res) => {
     const lastMessage = await Message.findOne({ conversation: conversationId }).sort({ createdAt: -1 });
 
     if (lastMessage) {
-      if (userRole === 'vendor') {
-        conversation.lastReadVendorMessage = lastMessage._id;
-      } else if (userRole === 'supplier') {
-        conversation.lastReadSupplierMessage = lastMessage._id;
+      if (userRole === 'buyer') {
+        conversation.lastReadBuyerMessage = lastMessage._id;
+      } else if (userRole === 'artisan') {
+        conversation.lastReadArtisanMessage = lastMessage._id;
       }
       await conversation.save();
     }
@@ -227,17 +227,17 @@ exports.getUnreadMessageCount = async (req, res) => {
       participants: userId,
     })
     .populate('lastMessage')
-    .populate('lastReadVendorMessage')
-    .populate('lastReadSupplierMessage');
+    .populate('lastReadBuyerMessage')
+    .populate('lastReadArtisanMessage');
 
     conversations.forEach(conv => {
       if (conv.lastMessage) {
-        if (userRole === 'vendor') {
-          if (!conv.lastReadVendorMessage || conv.lastReadVendorMessage.toString() !== conv.lastMessage._id.toString()) {
+        if (userRole === 'buyer') {
+          if (!conv.lastReadBuyerMessage || conv.lastReadBuyerMessage.toString() !== conv.lastMessage._id.toString()) {
             unreadCount++;
           }
-        } else if (userRole === 'supplier') {
-          if (!conv.lastReadSupplierMessage || conv.lastReadSupplierMessage.toString() !== conv.lastMessage._id.toString()) {
+        } else if (userRole === 'artisan') {
+          if (!conv.lastReadArtisanMessage || conv.lastReadArtisanMessage.toString() !== conv.lastMessage._id.toString()) {
             unreadCount++;
           }
         }
@@ -259,7 +259,7 @@ exports.getConversationDetails = async (req, res) => {
     const conversation = await Conversation.findById(conversationId)
       .populate({
         path: 'participants',
-        select: 'name businessName email role',
+        select: 'name email role',
       });
 
     if (!conversation) {

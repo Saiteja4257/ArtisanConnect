@@ -9,17 +9,17 @@ const ConversationSchema = new mongoose.Schema({
   participantModel: [{
     type: String,
     required: true,
-    enum: ['VendorUser', 'SupplierUser']
+    enum: ['BuyerUser', 'ArtisanUser']
   }],
   lastMessage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message'
   },
-  lastReadVendorMessage: {
+  lastReadBuyerMessage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message'
   },
-  lastReadSupplierMessage: {
+  lastReadArtisanMessage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message'
   },

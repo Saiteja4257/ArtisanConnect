@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProducts } from '../services/productService';
+import { createDirectOrder } from '../services/orderService';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, ShoppingCart, IndianRupee, Loader2, Package, MapPin } from 'lucide-react';
-import JoinOrderDialog from '@/components/JoinOrderDialog';
+
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
+import { useToast } from '@/components/ui/use-toast'; // Import useToast
 
 const categories = ['All', 'Vegetables', 'Grains', 'Oils', 'Spices', 'Dairy', 'Pulses'];
 
@@ -41,9 +43,11 @@ const Products = () => {
   const [minRating, setMinRating] = useState('none'); // NEW: Min rating filter, default to 'none'
   const [sortBy, setSortBy] = useState('none'); // NEW: Sort by option, default to 'none'
   const [sortOrder, setSortOrder] = useState('asc'); // NEW: Sort order option
+  const [targetCurrency, setTargetCurrency] = useState('INR');
 
   const navigate = useNavigate(); // Initialize useNavigate
   const { user } = useAuth(); // Get current user
+  const { toast } = useToast(); // NEW: Initialize toast
 
   useEffect(() => {
     if (locationEnabled && navigator.geolocation) {
@@ -67,7 +71,7 @@ const Products = () => {
   }, [locationEnabled]);
 
   const { data: productsData, isLoading, isError } = useQuery({
-    queryKey: ['products', { prepared: showPreparedOnly, search: searchTerm, minPrice, maxPrice, minRating, sortBy, sortOrder }],
+    queryKey: ['products', { prepared: showPreparedOnly, search: searchTerm, minPrice, maxPrice, minRating, sortBy, sortOrder, targetCurrency }],
     queryFn: () => {
       const params = {
         prepared: showPreparedOnly,
@@ -77,6 +81,7 @@ const Products = () => {
         minRating: minRating === 'none' ? undefined : minRating, // Don't send if 'none'
         sortBy: sortBy === 'none' ? undefined : sortBy, // Don't send if 'none'
         sortOrder: sortBy === 'none' ? undefined : sortOrder, // Only send sortOrder if sortBy is not 'none'
+        targetCurrency: targetCurrency, // Add targetCurrency to params
       };
       return getProducts(params);
     },
@@ -86,9 +91,9 @@ const Products = () => {
   // NEW: Sort products by distance if location is enabled and available
   if (locationEnabled && userLocation) {
     products = products.map(product => {
-      const supplierCoords = product.supplier?.address?.coords;
-      if (supplierCoords) {
-        const distance = haversineDistance(userLocation, supplierCoords);
+      const artisanCoords = product.artisan?.address?.coords;
+      if (artisanCoords) {
+        const distance = haversineDistance(userLocation, artisanCoords);
         return { ...product, distance };
       }
       return { ...product, distance: Infinity }; // Products without coords go to the end
@@ -101,9 +106,13 @@ const Products = () => {
     return matchesCategory;
   });
 
-  const handleJoinOrder = (product) => {
-    setSelectedProduct(product);
-    setIsDialogOpen(true);
+  const handleOrderNow = async (product) => {
+    try {
+      await createDirectOrder(product._id, 1); // Default quantity of 1
+      toast({ title: "Order Placed!", description: `${product.name} added to your orders.` });
+    } catch (error) {
+      toast({ title: "Order Failed", description: error.response?.data?.msg || "Could not place order.", variant: "destructive" });
+    }
   };
 
   if (isError) {
@@ -115,21 +124,21 @@ const Products = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Browse Products</h1>
-          <p className="text-muted-foreground">Find quality raw materials from verified suppliers.</p>
+          <p className="text-muted-foreground">Find quality raw materials from verified artisans.</p>
         </div>
 
         <div className="mb-8 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search by product or supplier..."
+              placeholder="Search by product or artisan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
+            {/* {categories.map((category) => (
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
@@ -138,15 +147,15 @@ const Products = () => {
               >
                 {category}
               </Button>
-            ))}
-            <Button
+            ))} */}
+            {/* <Button
               key="prepared"
               variant={showPreparedOnly ? 'default' : 'outline'}
               size="sm"
               onClick={() => setShowPreparedOnly(v => !v)}
             >
               Prepared Hub
-            </Button>
+            </Button> */}
             {/* NEW: Location Filter Button */}
             <Button
               variant={locationEnabled ? 'default' : 'outline'}
@@ -179,7 +188,7 @@ const Products = () => {
 
           {/* NEW: Min Rating Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Min. Supplier Rating:</span>
+            <span className="text-sm text-muted-foreground">Min. Artisan Rating:</span>
             <Select value={minRating} onValueChange={setMinRating}>
               <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Rating" />
@@ -238,15 +247,15 @@ const Products = () => {
                       <Badge variant="secondary">{product.category}</Badge>
                     </div>
                     <CardDescription>
-                      by {product.supplier ? (
+                                            by {product.artisan ? (
                         <span
                           className="text-primary underline cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation(); // Prevent click from propagating to the outer Link
-                            navigate(`/suppliers/${product.supplier._id}`);
+                            navigate(`/artisans/${product.artisan._id}`);
                           }}
                         >
-                          {product.supplier.businessName || product.supplier.name}
+                          {product.artisan.businessName || product.artisan.name}
                         </span>
                       ) : 'Unknown'}
                       {typeof product.distance === 'number' && product.distance != null && !isNaN(product.distance) && isFinite(product.distance) && userLocation && (
@@ -258,7 +267,9 @@ const Products = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-baseline space-x-1">
                         <IndianRupee className="w-4 h-4 text-primary" />
-                        <span className="text-2xl font-bold text-primary">{product.pricePerKg}</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {product.convertedCurrency ? `${product.convertedCurrency} ${product.pricePerKg.toFixed(2)}` : `₹${product.pricePerKg}`}
+                        </span>
                         <span className="text-muted-foreground">/{product.unit}</span>
                       </div>
                       <div className="text-right">
@@ -271,9 +282,9 @@ const Products = () => {
                 </Link>
                 {(!user || user.role !== 'supplier') && (
                   <CardContent className="pt-0">
-                    <Button className="w-full" onClick={() => { handleJoinOrder(product); }}>
+                    <Button className="w-full" onClick={() => { handleOrderNow(product); }}>
                       <ShoppingCart className="w-4 h-4 mr-2" />
-                      Join/Create Group Order
+                      Order Now
                     </Button>
                   </CardContent>
                 )}
@@ -291,11 +302,7 @@ const Products = () => {
       
       {/* The JoinOrderDialog component will be rendered here */}
       
-      <JoinOrderDialog
-        product={selectedProduct}
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-      />
+      
      
     </div>
   );

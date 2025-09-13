@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import RouteMap from '../components/RouteMap';
-import SupplierLocationMap from '../components/SupplierLocationMap';
+import ArtisanLocationMap from '../components/ArtisanLocationMap';
 import { Loader2, ArrowLeft, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios'; // Import axios
@@ -16,7 +16,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth(); // Get current user
-  const [vendorLocation, setVendorLocation] = useState(null);
+  const [buyerLocation, setBuyerLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState(null);
@@ -32,16 +32,16 @@ const ProductDetail = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setVendorLocation({
+          setBuyerLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
           setLocationError(null);
         },
         (error) => {
-          console.error("Error getting vendor location:", error);
+          console.error("Error getting buyer location:", error);
           setLocationError("Could not get your location. Route calculation is disabled.");
-          setVendorLocation(null);
+          setBuyerLocation(null);
         },
         { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } // Increased timeout
       );
@@ -56,14 +56,14 @@ const ProductDetail = () => {
   });
 
   const product = productData?.data;
-  const supplierCoords = product?.location || product?.supplier?.address?.coords;
-  const isOwner = user?._id === product?.supplier?._id;
+  const artisanCoords = product?.location || product?.artisan?.address?.coords;
+  const isOwner = user?._id === product?.artisan?._id;
 
   // --- DEBUGGING LOGS ---
   console.log('ProductDetail: user', user);
   console.log('ProductDetail: product', product);
   console.log('ProductDetail: user._id', user?._id);
-  console.log('ProductDetail: product.supplier._id', product?.supplier?._id);
+  console.log('ProductDetail: product.artisan._id', product?.artisan?._id);
   console.log('ProductDetail: isOwner', isOwner);
   // --- END DEBUGGING LOGS ---
 
@@ -72,7 +72,7 @@ const ProductDetail = () => {
     setChatError(null);
     try {
       const res = await axios.post(
-        `${API_BASE_URL}/conversations/${product.supplier._id}/${product._id}`,
+        `${API_BASE_URL}/conversations/${product.artisan._id}/${product._id}`,
         {},
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -158,7 +158,9 @@ const ProductDetail = () => {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Pricing & Quantity</h3>
                     <p className="text-muted-foreground">
-                      Price: <span className="font-bold text-primary text-xl">₹{product.pricePerKg}</span> / {product.unit}
+                      Price: <span className="font-bold text-primary text-xl">
+                        {product.convertedCurrency ? `${product.convertedCurrency} ${product.pricePerKg.toFixed(2)}` : `₹${product.pricePerKg}`}
+                      </span> / {product.unit}
                     </p>
                     <p className="text-muted-foreground">
                       Min. Order Quantity: <span className="font-bold">{product.minOrderQty}</span> {product.unit}
@@ -167,33 +169,33 @@ const ProductDetail = () => {
                       Available Stock: <span className="font-bold">{product.availableQty}</span> {product.unit}
                     </p>
                   </div>
-                  {product.supplier && (
+                  {product.artisan && (
                     <div>
-                      <h3 className="text-xl font-semibold mb-2">Supplier Information</h3>
+                      <h3 className="text-xl font-semibold mb-2">Artisan Information</h3>
                       <p className="text-muted-foreground">
-                        Supplier: <Link to={`/suppliers/${product.supplier._id}`} className="text-primary underline font-bold">
-                          {product.supplier.businessName || product.supplier.name}
+                        Artisan: <Link to={`/artisans/${product.artisan._id}`} className="text-primary underline font-bold">
+                          {product.artisan.businessName || product.artisan.name}
                         </Link>
                       </p>
-                      {product.supplier.address && (
+                      {product.artisan.address && (
                         <p className="text-muted-foreground flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
-                          {product.supplier.address.street}, {product.supplier.address.city}, {product.supplier.address.state} - {product.supplier.address.zipCode}
+                          {product.artisan.address.street}, {product.artisan.address.city}, {product.artisan.address.state} - {product.artisan.address.zipCode}
                         </p>
                       )}
-                      {supplierCoords && (
+                      {artisanCoords && (
                         <p className="text-muted-foreground text-sm mt-1">
-                          (Lat: {supplierCoords.lat}, Lng: {supplierCoords.lng})
+                          (Lat: {artisanCoords.lat}, Lng: {artisanCoords.lng})
                         </p>
                       )}
                     </div>
                   )}
                 </div>
 
-                {user?.role !== 'supplier' && product.supplier && (
+                {user?.role !== 'artisan' && product.artisan && (
                   <div className="mt-6 flex gap-2">
                     <Button onClick={handleChatClick} className="w-full" disabled={chatLoading}>
-                      {chatLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : ''}Chat with Supplier
+                      {chatLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : ''}Chat with Artisan
                     </Button>
                     <Button onClick={handleOrderClick} className="w-full">
                       Order
@@ -215,32 +217,32 @@ const ProductDetail = () => {
           <div className="lg:col-span-1">
             <Card className="shadow-lg h-full">
               <CardHeader>
-                <CardTitle>Supplier Location & Route</CardTitle>
-                <CardDescription>Find your way to the supplier.</CardDescription>
+                <CardTitle>Artisan Location & Route</CardTitle>
+                <CardDescription>Find your way to the artisan.</CardDescription>
               </CardHeader>
               <CardContent>
-                {supplierCoords ? (
+                {artisanCoords ? (
                   <>
                     {locationError ? (
                       <p className="text-destructive text-sm mb-2">
                         {locationError}
                       </p>
-                    ) : user?.role === 'supplier' && isOwner ? (
-                      <SupplierLocationMap
-                        supplierCoords={supplierCoords}
+                    ) : user?.role === 'artisan' && isOwner ? (
+                      <ArtisanLocationMap
+                        artisanCoords={artisanCoords}
                         isDialogOpen={isAnyDialogOpen} // Pass the state
                       />
-                    ) : user?.role === 'supplier' && !isOwner && vendorLocation ? (
+                    ) : user?.role === 'artisan' && !isOwner && buyerLocation ? (
                       <RouteMap
-                        vendorCoords={vendorLocation}
-                        supplierCoords={supplierCoords}
+                        buyerCoords={buyerLocation}
+                        artisanCoords={artisanCoords}
                         isDialogOpen={isAnyDialogOpen} // Pass the state
                         userRole={user?.role} // Pass user role
                       />
-                    ) : vendorLocation ? (
+                    ) : buyerLocation ? (
                       <RouteMap
-                        vendorCoords={vendorLocation}
-                        supplierCoords={supplierCoords}
+                        buyerCoords={buyerLocation}
+                        artisanCoords={artisanCoords}
                         isDialogOpen={isAnyDialogOpen} // Pass the state
                         userRole={user?.role} // Pass user role
                       />
@@ -258,15 +260,15 @@ const ProductDetail = () => {
                     {isOwner ? (
                       <>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Add your location to show it on the map for customers.
+                          Add your location to show it on the map for buyers.
                         </p>
                         <Button asChild className="mt-4">
-                          <Link to="/supplier-profile-page">Set Location</Link>
+                          <Link to="/artisan-profile-page">Set Location</Link>
                         </Button>
                       </>
                     ) : (
                       <p className="mt-1 text-sm text-muted-foreground">
-                        This supplier has not set their location yet.
+                        This artisan has not set their location yet.
                       </p>
                     )}
                   </div>
@@ -288,3 +290,4 @@ const ProductDetail = () => {
 };
 
 export default ProductDetail;
+

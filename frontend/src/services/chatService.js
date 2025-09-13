@@ -1,7 +1,7 @@
 import api from './axiosConfig';
 
-export const createOrGetConversation = (supplierId, productId) => {
-  return api.post(`/conversations/${supplierId}/${productId}`);
+export const createOrGetConversation = (artisanId, productId) => {
+  return api.post(`/conversations/${artisanId}/${productId}`);
 };
 
 export const sendMessage = (conversationId, content) => {

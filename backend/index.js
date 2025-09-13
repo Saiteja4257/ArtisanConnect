@@ -5,7 +5,8 @@ const connectDB = require('./config/db');
 const routes = require('./routes/route');
 
 // Load env vars
-dotenv.config();
+dotenv.config({ path: './backend/.env' }); // Specify the path to .env
+console.log('MONGO_URI:', process.env.MONGO_URI); // Add this line for debugging
 
 // Connect to database
 connectDB();

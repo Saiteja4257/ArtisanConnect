@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', role: 'vendor',
+    name: '', email: '', password: '', confirmPassword: '', role: 'buyer',
     businessName: '', address: { street: '', city: '', state: '', zipCode: '' },
   });
   const [otp, setOtp] = useState(''); // NEW: OTP state
@@ -132,7 +132,7 @@ const Register = () => {
         <CardHeader className="pb-6">
           <CardTitle>{step === 'register' ? 'Create Account' : 'Verify Your Email'}</CardTitle>
           <CardDescription>
-            {step === 'register' ? 'Join our network of vendors and suppliers.' : 'An OTP has been sent to your email. Please enter it below.'}
+            {step === 'register' ? 'Join our network of artisans and buyers.' : 'An OTP has been sent to your email. Please enter it below.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -140,8 +140,8 @@ const Register = () => {
             <>
             <form onSubmit={handleSubmit} className="space-y-4">
               <RadioGroup value={formData.role} onValueChange={(val) => handleInputChange('role', val)} className="grid grid-cols-2 gap-4 mb-6">
-                <div><RadioGroupItem value="vendor" id="vendor" className="peer sr-only" /><Label htmlFor="vendor" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary">Vendor</Label></div>
-                <div><RadioGroupItem value="supplier" id="supplier" className="peer sr-only" /><Label htmlFor="supplier" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary">Supplier</Label></div>
+                <div><RadioGroupItem value="artisan" id="artisan" className="peer sr-only" /><Label htmlFor="artisan" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary">Artisan</Label></div>
+                <div><RadioGroupItem value="buyer" id="buyer" className="peer sr-only" /><Label htmlFor="buyer" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary">Buyer</Label></div>
               </RadioGroup>
               <div className="space-y-2"><Label htmlFor="name">Full Name</Label><Input id="name" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} required /></div>
               {formData.role === 'supplier' && <div className="space-y-2"><Label htmlFor="businessName">Business Name</Label><Input id="businessName" value={formData.businessName} onChange={(e) => handleInputChange('businessName', e.target.value)} required /></div>}

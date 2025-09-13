@@ -29,24 +29,24 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-const LocationMap = ({ vendorCoords, supplierCoords }) => {
-  if (!vendorCoords || !supplierCoords) {
+const LocationMap = ({ buyerCoords, artisanCoords }) => {
+  if (!buyerCoords || !artisanCoords) {
     return <p>Loading map...</p>;
   }
 
   const center = [
-    (vendorCoords.lat + supplierCoords.lat) / 2,
-    (vendorCoords.lng + supplierCoords.lng) / 2
+    (buyerCoords.lat + artisanCoords.lat) / 2,
+    (buyerCoords.lng + artisanCoords.lng) / 2
   ];
 
   const distance = haversineDistance(
-    [vendorCoords.lat, vendorCoords.lng],
-    [supplierCoords.lat, supplierCoords.lng]
+    [buyerCoords.lat, buyerCoords.lng],
+    [artisanCoords.lat, artisanCoords.lng]
   ).toFixed(2);
 
   const positions = [
-    [vendorCoords.lat, vendorCoords.lng],
-    [supplierCoords.lat, supplierCoords.lng]
+    [buyerCoords.lat, buyerCoords.lng],
+    [artisanCoords.lat, artisanCoords.lng]
   ];
 
   return (
@@ -55,11 +55,11 @@ const LocationMap = ({ vendorCoords, supplierCoords }) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
       />
-      <Marker position={[vendorCoords.lat, vendorCoords.lng]} icon={greenIcon}>
+      <Marker position={[buyerCoords.lat, buyerCoords.lng]} icon={greenIcon}>
         <Popup>Your Location</Popup>
       </Marker>
-      <Marker position={[supplierCoords.lat, supplierCoords.lng]} icon={redIcon}>
-        <Popup>Supplier Location</Popup>
+      <Marker position={[artisanCoords.lat, artisanCoords.lng]} icon={redIcon}>
+        <Popup>Artisan Location</Popup>
       </Marker>
       <Polyline positions={positions} color="blue">
         <Popup>{`Distance: ${distance} km`}</Popup>

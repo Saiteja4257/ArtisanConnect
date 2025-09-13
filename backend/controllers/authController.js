@@ -1,4 +1,4 @@
-const { VendorUser, SupplierUser } = require('../models/model');
+const { BuyerUser, ArtisanUser } = require('../models/model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
@@ -54,8 +54,8 @@ exports.register = async (req, res) => {
     const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    if (role === 'vendor') {
-      Model = VendorUser;
+    if (role === 'buyer') {
+      Model = BuyerUser;
       userData = {
         name,
         email,
@@ -66,12 +66,12 @@ exports.register = async (req, res) => {
         otpExpires,
         isVerified: false,
       };
-    } else if (role === 'supplier') {
-      Model = SupplierUser;
+    } else if (role === 'artisan') {
+      Model = ArtisanUser;
       userData = {
         email,
         password: hashedPassword,
-        companyName: name, // Use name for companyName
+        artisanName: name, // Use name for artisanName
         address: safeAddress,
         role,
         otp,
@@ -151,9 +151,9 @@ exports.login = async (req, res) => {
     console.log('Login request body:', req.body);
     const { email, password } = req.body;
     
-    let user = await VendorUser.findOne({ email });
+    let user = await BuyerUser.findOne({ email });
     if (!user) {
-      user = await SupplierUser.findOne({ email });
+      user = await ArtisanUser.findOne({ email });
     }
 
     console.log('User found:', user ? user.email : 'None');
@@ -170,7 +170,7 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user._id, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    let userName = user.role === 'supplier' ? user.companyName : user.name;
+    let userName = user.role === 'artisan' ? user.artisanName : user.name;
     res.json({ token, user: { _id: user._id, name: userName, email: user.email, role: user.role, address: user.address } });
   } catch (err) {
     res.status(500).json({ msg: err.message });
@@ -182,9 +182,9 @@ exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     
-    let user = await VendorUser.findOne({ email });
+    let user = await BuyerUser.findOne({ email });
     if (!user) {
-      user = await SupplierUser.findOne({ email });
+      user = await ArtisanUser.findOne({ email });
     }
 
     if (!user) {
@@ -200,10 +200,10 @@ exports.verifyOtp = async (req, res) => {
     }
 
     let Model;
-    if (user.role === 'vendor') {
-      Model = VendorUser;
-    } else if (user.role === 'supplier') {
-      Model = SupplierUser;
+    if (user.role === 'buyer') {
+      Model = BuyerUser;
+    } else if (user.role === 'artisan') {
+      Model = ArtisanUser;
     }
 
     user = await Model.findByIdAndUpdate(
@@ -225,9 +225,9 @@ exports.verifyOtp = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    let user = await VendorUser.findOne({ email });
+    let user = await BuyerUser.findOne({ email });
     if (!user) {
-      user = await SupplierUser.findOne({ email });
+      user = await ArtisanUser.findOne({ email });
     }
 
     if (!user) {
@@ -237,7 +237,7 @@ exports.forgotPassword = async (req, res) => {
     const otp = generateOtp();
     const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    let Model = user.role === 'vendor' ? VendorUser : SupplierUser;
+    let Model = user.role === 'buyer' ? BuyerUser : ArtisanUser;
     await Model.findByIdAndUpdate(user._id, { otp, otpExpires });
 
     const message = `Your password reset OTP is: ${otp}. It is valid for 10 minutes.`;
@@ -258,9 +258,9 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { email, otp, password } = req.body;
-    let user = await VendorUser.findOne({ email });
+    let user = await BuyerUser.findOne({ email });
     if (!user) {
-      user = await SupplierUser.findOne({ email });
+      user = await ArtisanUser.findOne({ email });
     }
 
     if (!user) {
@@ -273,7 +273,7 @@ exports.resetPassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    let Model = user.role === 'vendor' ? VendorUser : SupplierUser;
+    let Model = user.role === 'buyer' ? BuyerUser : ArtisanUser;
     await Model.findByIdAndUpdate(user._id, {
       password: hashedPassword,
       otp: undefined,
@@ -290,9 +290,9 @@ exports.resetPassword = async (req, res) => {
 exports.verifyPasswordResetOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    let user = await VendorUser.findOne({ email });
+    let user = await BuyerUser.findOne({ email });
     if (!user) {
-      user = await SupplierUser.findOne({ email });
+      user = await ArtisanUser.findOne({ email });
     }
 
     if (!user) {

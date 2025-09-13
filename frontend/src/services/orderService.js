@@ -1,43 +1,33 @@
 import api from './axiosConfig';
 
 /**
- * Fetches all group orders the current user is a participant in.
- * Used for the "My Orders" page for vendors.
+ * Fetches all direct orders the current user is a participant in.
+ * Used for the "My Orders" page for buyers.
  */
-export const getMyGroupOrders = () => {
-  return api.get('/group-orders');
+export const getMyDirectOrders = () => {
+  return api.get('/orders/my-orders');
 };
 
 /**
- * Fetches all group orders for products belonging to the current supplier.
- * Used for the "Supplier Dashboard".
+ * Fetches all direct orders for products belonging to the current artisan.
+ * Used for the "Artisan Dashboard".
  */
-export const getSupplierGroupOrders = () => {
-  return api.get('/group-orders/supplier');
+export const getArtisanDirectOrders = () => {
+  return api.get('/orders/artisan-orders');
 };
 
 /**
- * Creates a new group order.
+ * Creates a new direct order.
  * @param {string} productId - The ID of the product.
- * @param {number} targetQty - The target quantity for the group order to be completed.
- * @param {number} quantity - The initial quantity the creator is ordering.
+ * @param {number} quantity - The quantity the buyer is ordering.
  */
-export const createGroupOrder = (productId, targetQty, quantity) => {
-  return api.post('/group-orders', { productId, targetQty, quantity });
+export const createDirectOrder = (productId, quantity) => {
+  return api.post('/orders', { productId, quantity });
 };
 
 /**
- * Allows a user to join an existing group order.
- * @param {string} groupOrderId - The ID of the group order to join.
- * @param {number} quantity - The quantity the user wants to order.
- */
-export const joinGroupOrder = (groupOrderId, quantity) => {
-  return api.post('/group-orders/join', { groupOrderId, quantity });
-};
-
-/**
- * Modifies a user's quantity in an open group order.
- * @param {string} orderId - The ID of the group order.
+ * Modifies a user's quantity in an open direct order.
+ * @param {string} orderId - The ID of the direct order.
  * @param {number} newQuantity - The new quantity for the user.
  */
 export const modifyOrder = (orderId, newQuantity) => {
@@ -68,10 +58,18 @@ export const getOrderSummary = (orderId) => {
   return api.get(`/orders/${orderId}/summary`);
 };
 
-export const getSupplierAnalytics = () => {
-  return api.get('/suppliers/analytics');
+export const getArtisanAnalytics = () => {
+  return api.get('/artisans/analytics');
+};
+
+export const getArtisanGroupOrders = () => {
+  return api.get('/orders/artisan-group-orders');
 };
 
 export const cancelOrder = (orderId, cancellationMessage) => {
   return api.patch(`/orders/${orderId}/cancel`, { cancellationMessage });
+};
+
+export const createGroupOrder = (productId, quantity, groupId) => {
+  return api.post('/orders/group', { productId, quantity, groupId });
 };

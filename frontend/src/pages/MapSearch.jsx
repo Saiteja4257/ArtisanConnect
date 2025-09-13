@@ -1,28 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
-import { getNearbySuppliers } from '../services/productService';
+import { useState, useEffect } from 'react';
+import { getArtisanLocations } from '../services/productService'; // Changed import
 import { useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'; // Removed useMap
 
-// This component renders a Leaflet Map, fetches nearby suppliers from our API,
+// This component renders a Leaflet Map, fetches all artisan locations from our API,
 // and shows markers on the map.
-
-const MapEvents = ({ onMoveEnd }) => {
-  const map = useMap();
-  useEffect(() => {
-    map.on('moveend', () => {
-      const center = map.getCenter();
-      onMoveEnd(center.lat, center.lng);
-    });
-    return () => {
-      map.off('moveend');
-    };
-  }, [map, onMoveEnd]);
-  return null;
-};
 
 const MapSearch = () => {
   const [userPos, setUserPos] = useState(null);
-  const [suppliers, setSuppliers] = useState([]);
+  const [artisans, setArtisans] = useState([]);
   const [selected, setSelected] = useState(null);
   const queryClient = useQueryClient();
 
@@ -32,32 +18,26 @@ const MapSearch = () => {
       navigator.geolocation.getCurrentPosition((pos) => {
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserPos(p);
-        fetchSuppliers(p.lat, p.lng);
       }, () => {
         // fallback location center
         const p = { lat: 20.5937, lng: 78.9629 };
         setUserPos(p);
-        fetchSuppliers(p.lat, p.lng);
       });
     } else {
       const p = { lat: 20.5937, lng: 78.9629 };
       setUserPos(p);
-      fetchSuppliers(p.lat, p.lng);
     }
+    fetchArtisanData(); // Fetch all artisan locations once
   }, []);
 
-  const fetchSuppliers = async (lat, lng) => {
+  const fetchArtisanData = async () => {
     try {
-      const res = await getNearbySuppliers(lat, lng, 200);
-      const list = res.data.suppliers || [];
-      setSuppliers(list);
+      const res = await getArtisanLocations(); // Call the new API
+      const list = res.data || []; // Response is directly an array of artisans
+      setArtisans(list);
     } catch (err) {
       console.error(err);
     }
-  };
-
-  const handleMoveEnd = (lat, lng) => {
-    fetchSuppliers(lat, lng);
   };
 
   return (
@@ -69,17 +49,16 @@ const MapSearch = () => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            <MapEvents onMoveEnd={handleMoveEnd} />
-            {suppliers.map(item => {
-              const coords = item.supplier.address?.coords;
+            {artisans.map(artisan => {
+              const coords = artisan.address?.coords;
               if (!coords) return null;
               return (
-                <Marker key={item.supplier._id} position={[coords.lat, coords.lng]} eventHandlers={{
+                <Marker key={artisan._id} position={[coords.lat, coords.lng]} eventHandlers={{
                   click: () => {
-                    setSelected(item);
+                    setSelected(artisan);
                   },
                 }}>
-                  <Tooltip>{item.supplier.businessName || item.supplier.name}</Tooltip>
+                  <Tooltip>{artisan.artisanName}</Tooltip>
                 </Marker>
               );
             })}
@@ -87,13 +66,12 @@ const MapSearch = () => {
         )}
       </div>
       <aside className="w-1/4 p-4 overflow-auto">
-        <h2 className="text-lg font-bold">Nearby Suppliers</h2>
-        {suppliers.length === 0 && <p>No suppliers found nearby.</p>}
-        {suppliers.map(item => (
-          <div key={item.supplier._id} className={`p-2 border ${selected && selected.supplier._id === item.supplier._id ? 'bg-slate-100' : ''}`} onClick={() => setSelected(item)}>
-            <h3 className="font-medium">{item.supplier.businessName || item.supplier.name}</h3>
-            <p className="text-sm">{item.supplier.address?.street}, {item.supplier.address?.city}</p>
-            <p className="text-sm">{item.distanceKm?.toFixed(1)} km</p>
+        <h2 className="text-lg font-bold">Artisans</h2>
+        {artisans.length === 0 && <p>No artisans found.</p>}
+        {artisans.map(artisan => (
+          <div key={artisan._id} className={`p-2 border ${selected && selected._id === artisan._id ? 'bg-slate-100' : ''}`} onClick={() => setSelected(artisan)}>
+            <h3 className="font-medium">{artisan.artisanName}</h3>
+            <p className="text-sm">{artisan.address?.street}, {artisan.address?.city}</p>
           </div>
         ))}
       </aside>
