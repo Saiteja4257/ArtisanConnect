@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { Loader2 } from "lucide-react";
 
 const InboxPage = () => {
   const { user } = useAuth();
@@ -12,7 +11,8 @@ const InboxPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -24,8 +24,8 @@ const InboxPage = () => {
         });
         setConversations(res.data);
       } catch (err) {
-        console.error('Error fetching conversations:', err);
-        setError('Failed to load conversations.');
+        console.error("Error fetching conversations:", err);
+        setError("Failed to load conversations.");
       } finally {
         setLoading(false);
       }
@@ -35,73 +35,92 @@ const InboxPage = () => {
       fetchConversations();
     } else if (!user) {
       setLoading(false);
-      setError('Please log in to view your inbox.');
+      setError("Please log in to view your inbox.");
     }
   }, [user, API_BASE_URL]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
-        <p className="ml-2">Loading conversations...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen text-gray-700">
+        <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+        <p className="mt-4 text-lg font-medium">Loading conversations...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-destructive">Error</h2>
-        <p className="text-muted-foreground">{error}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen text-center">
+        <h2 className="text-3xl font-bold text-red-600">Oops!</h2>
+        <p className="mt-2 text-gray-600">{error}</p>
+        <button
+          onClick={() => navigate("/login")}
+          className="mt-6 rounded-lg bg-green-600 px-6 py-2 text-white font-semibold shadow hover:bg-green-700 transition"
+        >
+          Go to Login
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl">Your Inbox</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="rounded-2xl bg-white shadow-lg ring-1 ring-gray-100 p-6">
+          <h1 className="text-3xl font-extrabold text-gray-800 mb-6">
+            Your Inbox
+          </h1>
+
           {conversations.length === 0 ? (
-            <p className="text-muted-foreground text-center">No conversations yet.</p>
+            <p className="text-center text-gray-500 text-lg">
+              No conversations yet.
+            </p>
           ) : (
-            <div className="space-y-4">
+            <ul className="space-y-4">
               {conversations.map((conv) => (
-                <Link
-                  key={conv._id}
-                  to={`/chat/${conv._id}`}
-                  className="block p-4 border rounded-md hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">
-                      {conv.participants.map(p => p.businessName || p.name || p.email).join(', ')}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {conv.unreadCount > 0 && (
-                        <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
-                          {conv.unreadCount} New
-                        </span>
-                      )}
-                      {conv.lastMessage && (
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(conv.lastMessage.createdAt).toLocaleDateString()}
-                        </span>
-                      )}
+                <li key={conv._id}>
+                  <Link
+                    to={`/chat/${conv._id}`}
+                    className="block rounded-xl border border-gray-100 p-4 hover:shadow-md hover:bg-gray-50 transition"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {conv.participants
+                            .map(
+                              (p) => p.businessName || p.name || p.email
+                            )
+                            .join(", ")}
+                        </h3>
+                        {conv.lastMessage && (
+                          <p className="mt-1 text-sm text-gray-600 line-clamp-1">
+                            {conv.lastMessage.content}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1">
+                        {conv.unreadCount > 0 && (
+                          <span className="rounded-full bg-green-600 px-2 py-0.5 text-xs font-bold text-white">
+                            {conv.unreadCount} New
+                          </span>
+                        )}
+                        {conv.lastMessage && (
+                          <span className="text-xs text-gray-400">
+                            {new Date(
+                              conv.lastMessage.createdAt
+                            ).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  {conv.lastMessage && (
-                    <p className="text-muted-foreground text-sm mt-1 truncate">
-                      {conv.lastMessage.content}
-                    </p>
-                  )}
-                </Link>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

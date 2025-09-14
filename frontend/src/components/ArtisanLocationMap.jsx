@@ -41,24 +41,22 @@ const ArtisanLocationMap = ({ artisanCoords, isDialogOpen }) => {
   const position = [artisanCoords.lat, artisanCoords.lng];
 
   return (
-    <div className="map-container">
-      <MapContainer 
-        center={position} 
-        zoom={13} 
-        style={{ height: '400px', width: '100%' }} 
-        scrollWheelZoom={false}
-        className={isDialogOpen ? 'pointer-events-none' : ''} // Apply class conditionally
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        />
+    <div className="bg-white rounded-2xl shadow-lg p-4">
+  {(!artisanCoords)
+    ? <div className="text-center py-8 text-green-600 font-semibold">Loading artisan location...</div>
+    : (
+      <MapContainer center={position} zoom={14} className="rounded-xl shadow-lg" style={{ height: '350px', width: '100%' }}>
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={position} />
         <Marker position={position} icon={redIcon}>
-          <Popup>Artisan Location</Popup>
+          <Popup>
+            <span className="text-green-700 font-bold">Artisan Location</span>
+          </Popup>
         </Marker>
       </MapContainer>
-    </div>
+    )
+  }
+</div>
   );
 };
 

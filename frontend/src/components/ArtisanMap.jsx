@@ -41,10 +41,14 @@ const ArtisanMap = ({ lat, lng }) => {
 
   if (!mapLoaded) {
     return (
-      <div className="flex justify-center items-center h-64 bg-gray-100 rounded-md">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="ml-2 text-muted-foreground">Loading map...</p>
+      <div className="bg-white rounded-2xl shadow-lg p-4">
+  {!GOOGLE_MAPS_API_KEY
+    ? <div className="flex flex-col items-center justify-center py-8">
+        <Loader2 className="animate-spin text-green-600 w-8 h-8 mb-3" />
+        <span className="text-green-700 font-medium">Loading map...</span>
       </div>
+    : <div ref={mapRef} className="rounded-xl shadow-lg" style={{ height: '350px', width: '100%' }} />}
+</div>
     );
   }
 

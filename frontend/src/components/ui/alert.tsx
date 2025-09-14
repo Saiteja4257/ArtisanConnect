@@ -8,7 +8,8 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
+
+      default: "bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100",
         destructive:
           "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
       },
@@ -18,6 +19,7 @@ const alertVariants = cva(
     },
   }
 )
+
 
 const Alert = React.forwardRef<
   HTMLDivElement,

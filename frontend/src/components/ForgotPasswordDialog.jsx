@@ -79,55 +79,49 @@ const ForgotPasswordDialog = ({ children, open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="bg-white dark:bg-white">
-        <DialogHeader>
-          <DialogTitle>Forgot Password</DialogTitle>
-          <DialogDescription>
-            {step === 'enter-email' && 'Enter your email to receive a password reset OTP.'}
-            {step === 'enter-otp' && 'Enter the OTP sent to your email.'}
-            {step === 'enter-password' && 'Enter your new password.'}
-          </DialogDescription>
-        </DialogHeader>
-        {step === 'enter-email' && (
-          <form onSubmit={handleForgotPassword} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <Button type="submit" className="w-full" disabled={forgotPasswordMutation.isPending}>
-              {forgotPasswordMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Send OTP
-            </Button>
-          </form>
-        )}
-        {step === 'enter-otp' && (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="otp">OTP</Label>
-              <Input id="otp" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required />
-            </div>
-            <Button type="submit" className="w-full" disabled={verifyOtpMutation.isPending}>
-              {verifyOtpMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Verify OTP
-            </Button>
-          </form>
-        )}
-        {step === 'enter-password' && (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-            </div>
-            <Button type="submit" className="w-full" disabled={resetPasswordMutation.isPending}>
-              {resetPasswordMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Reset Password
-            </Button>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+  <DialogContent className="bg-gradient-to-br from-indigo-50 via-white to-green-50 rounded-xl shadow-2xl border p-8 max-w-md mx-auto">
+    <DialogHeader>
+      <DialogTitle className="text-2xl font-bold text-indigo-700">Forgot Password</DialogTitle>
+      <DialogDescription className="text-gray-700 mt-1">
+        {step === 'enter-email' && 'Enter your email to receive a password reset OTP.'}
+        {step === 'enter-otp' && 'Enter the OTP sent to your email.'}
+        {step === 'enter-password' && 'Enter your new password.'}
+      </DialogDescription>
+    </DialogHeader>
+    <form onSubmit={step === 'enter-email' ? handleForgotPassword : step === 'enter-otp' ? handleVerifyOtp : handleResetPassword} className="space-y-6">
+      {step === 'enter-email' && (
+        <div>
+          <Label htmlFor="email" className="font-semibold text-lg text-indigo-700">Email</Label>
+          <Input id="email" name="email" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-400 transition w-full" required />
+          <Button type="submit" className="bg-indigo-700 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-800 mt-3 flex items-center gap-2">
+            {forgotPasswordMutation.isPending && <Loader2 className="animate-spin w-5 h-5" />} Send OTP
+          </Button>
+        </div>
+      )}
+      {step === 'enter-otp' && (
+        <div>
+          <Label htmlFor="otp" className="font-semibold text-lg text-green-700">OTP</Label>
+          <Input id="otp" name="otp" value={otp} onChange={e => setOtp(e.target.value)} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition w-full" required />
+          <Button type="submit" className="bg-green-600 text-white px-5 py-2 rounded-lg shadow hover:bg-green-700 mt-3 flex items-center gap-2">
+            {verifyOtpMutation.isPending && <Loader2 className="animate-spin w-5 h-5" />} Verify OTP
+          </Button>
+        </div>
+      )}
+      {step === 'enter-password' && (
+        <div>
+          <Label htmlFor="password" className="font-semibold text-lg text-indigo-700">New Password</Label>
+          <Input id="password" name="password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-400 transition w-full" required />
+          <Label htmlFor="confirmPassword" className="font-semibold text-lg text-indigo-700 mt-3">Confirm New Password</Label>
+          <Input id="confirmPassword" name="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-400 transition w-full" required />
+          <Button type="submit" className="bg-indigo-700 text-white px-5 py-2 rounded-lg shadow hover:bg-indigo-800 mt-3 flex items-center gap-2">
+            {resetPasswordMutation.isPending && <Loader2 className="animate-spin w-5 h-5" />} Reset Password
+          </Button>
+        </div>
+      )}
+    </form>
+  </DialogContent>
+</Dialog>
+
   );
 };
 

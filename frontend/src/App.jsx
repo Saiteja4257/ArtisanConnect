@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route,useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
@@ -25,17 +25,19 @@ import CompletedOrdersPage from './pages/CompletedOrdersPage';
 import ArtisanOrdersPage from './pages/ArtisanOrdersPage'; // NEW: Import ArtisanOrdersPage
 
 const queryClient = new QueryClient();
+function AppWrapper() {
+  const location = useLocation();
+  const hideNavbar = location.pathname === "/login" || location.pathname === "/register";
 
-function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Toaster />
-          <Navbar />
-          <main>
-            <Routes>
-              <Route path="/" element={<Home />} />
+    <>
+      {!hideNavbar && <Navbar />}
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+           <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               
@@ -48,19 +50,32 @@ function App() {
               
               <Route path="/profile" element={<ProtectedRoute><BuyerProfile /></ProtectedRoute>} />
               <Route path="/artisan-profile-page" element={<ProtectedRoute allowedRoles={['artisan']}><ArtisanProfilePage /></ProtectedRoute>} />
-
+              
               <Route path="/my-products" element={<ProtectedRoute allowedRoles={['artisan']}><MyProductsPage /></ProtectedRoute>} />
               <Route path="/artisan-orders" element={<ProtectedRoute allowedRoles={['artisan']}><ArtisanOrdersPage /></ProtectedRoute>} /> {/* NEW: Artisan Orders Page */}
               <Route path="/completed-orders" element={<ProtectedRoute allowedRoles={['artisan']}><CompletedOrdersPage /></ProtectedRoute>} />
-
+              
               <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
               <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </main>
+            </main>
+            </>
+  );
+}
+
+function App() {
+  return (
+   
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Toaster />
+          <AppWrapper />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
+
   );
 }
 

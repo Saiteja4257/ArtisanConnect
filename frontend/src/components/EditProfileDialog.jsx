@@ -115,55 +115,57 @@ const EditProfileDialog = ({ isOpen, onClose, currentUser }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-blue-50"> {/* Added bg-blue-50 class */}
-        <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>
-            Make changes to your profile here. Click save when're done.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          {authUser.role === 'buyer' && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
-            </div>
-          )}
-          {authUser.role === 'artisan' && (
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="businessName" className="text-right">Business Name</Label>
-              <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleChange} className="col-span-3" />
-            </div>
-          )}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">Email</Label>
-            <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="street" className="text-right">Street</Label>
-            <Input id="street" name="address.street" value={formData.address.street} onChange={handleChange} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="city" className="text-right">City</Label>
-            <Input id="city" name="address.city" value={formData.address.city} onChange={handleChange} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="state" className="text-right">State</Label>
-            <Input id="state" name="address.state" value={formData.address.state} onChange={handleChange} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="zipCode" className="text-right">Zip Code</Label>
-            <Input id="zipCode" name="address.zipCode" value={formData.address.zipCode} onChange={handleChange} className="col-span-3" />
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={updateProfileMutation.isPending}>
-              {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save changes
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+  <DialogContent className="bg-gradient-to-r from-blue-50 via-white to-gray-50 rounded-xl shadow-2xl border p-8 max-w-lg mx-auto">
+    <DialogHeader>
+      <DialogTitle className="text-2xl font-bold text-blue-700">Edit Profile</DialogTitle>
+      <DialogDescription className="text-gray-700 mt-2">Make changes to your profile here. Click save when you're done.</DialogDescription>
+    </DialogHeader>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {authUser.role === 'buyer' && (
+        <div>
+          <Label htmlFor="name" className="font-semibold text-lg text-blue-700">Name</Label>
+          <Input id="name" name="name" value={formData.name} onChange={handleChange} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full" required />
+        </div>
+      )}
+      {authUser.role === 'artisan' && (
+        <div>
+          <Label htmlFor="businessName" className="font-semibold text-lg text-orange-700">Business Name</Label>
+          <Input id="businessName" name="businessName" value={formData.businessName} onChange={handleChange} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-400 transition w-full" required />
+        </div>
+      )}
+      <div>
+        <Label htmlFor="email" className="font-semibold text-lg text-gray-700">Email</Label>
+        <Input id="email" name="email" value={formData.email} onChange={handleChange} className="mt-1 px-3 py-2 bg-white rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 transition w-full" required />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="address.street" className="font-medium text-gray-700">Street</Label>
+          <Input id="address.street" name="address.street" value={formData.address.street} onChange={handleChange} className="mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 w-full" />
+        </div>
+        <div>
+          <Label htmlFor="address.city" className="font-medium text-gray-700">City</Label>
+          <Input id="address.city" name="address.city" value={formData.address.city} onChange={handleChange} className="mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 w-full" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="address.state" className="font-medium text-gray-700">State</Label>
+          <Input id="address.state" name="address.state" value={formData.address.state} onChange={handleChange} className="mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 w-full" />
+        </div>
+        <div>
+          <Label htmlFor="address.zipCode" className="font-medium text-gray-700">Zip Code</Label>
+          <Input id="address.zipCode" name="address.zipCode" value={formData.address.zipCode} onChange={handleChange} className="mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 w-full" />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button type="submit" className="bg-blue-700 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-800 font-semibold flex items-center gap-2">
+          {updateProfileMutation.isPending && <Loader2 className="animate-spin w-5 h-5" />} Save changes
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>
+
   );
 };
 

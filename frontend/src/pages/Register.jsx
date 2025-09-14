@@ -4,25 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import LoginNavbar from '../components/LoginNavbar';
+import riderImg from '../assets/rider.png';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', role: 'buyer',
+    name: '', email: '', password: '', confirmPassword: '', role: 'vendor',
     businessName: '', address: { street: '', city: '', state: '', zipCode: '' },
   });
-  const [otp, setOtp] = useState(''); // NEW: OTP state
-  const [step, setStep] = useState('register'); // NEW: Step state (register, verifyOtp)
-  const [registrationEmail, setRegistrationEmail] = useState(''); // NEW: Store email for OTP verification
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState('register');
+  const [registrationEmail, setRegistrationEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState(''); // NEW: Email validation error
+  const [emailError, setEmailError] = useState('');
   const { register: authRegister, isAuthenticated, verifyOtp: authVerifyOtp } = useAuth();
   const { toast } = useToast();
-  
-  // Regex for email format validation
+
   const emailRegex = /^[\w-]+(?:\.[\w-]+)*@(?:[\w-]+\.)+[a-zA-Z]{2,7}$/;
 
   if (isAuthenticated) return <Navigate to="/" replace />;
@@ -43,45 +43,27 @@ const Register = () => {
       setFormData(prev => ({ ...prev, address: { ...prev.address, [addressField]: value } }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
-      if (field === 'email') {
-        validateEmailFormat(value);
-      }
+      if (field === 'email') validateEmailFormat(value);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (formData.password !== formData.confirmPassword) {
       toast({ title: "Passwords do not match", variant: "destructive" });
       return;
     }
-
-    // Perform email format validation on submit as well
-    if (!validateEmailFormat(formData.email)) {
-      return;
-    }
+    if (!validateEmailFormat(formData.email)) return;
 
     setIsLoading(true);
-    // Build userData to ensure `address` matches backend schema
     const { confirmPassword, ...rest } = formData;
-    const userData = {
-      ...rest,
-      address: {
-        street: formData.address.street || '',
-        city: formData.address.city || '',
-        state: formData.address.state || '',
-        zipCode: formData.address.zipCode || '',
-      }
-    };
-
-    const response = await authRegister(userData); // Use authRegister
-
-    if (response && response.success) {
+    const userData = { ...rest, address: { ...formData.address } };
+    const response = await authRegister(userData);
+    if (response?.success) {
       setRegistrationEmail(formData.email);
       setStep('verifyOtp');
-      toast({ title: "OTP Sent", description: response.message || "Please check your email for the OTP." });
-    } else if (response && response.message) {
+      toast({ title: "OTP Sent", description: response.message || "Check your email for OTP." });
+    } else if (response?.message) {
       toast({ title: "Registration Error", description: response.message, variant: "destructive" });
     }
     setIsLoading(false);
@@ -91,12 +73,9 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
     const response = await authVerifyOtp(registrationEmail, otp);
-
-    if (response && response.success) {
-      toast({ title: "Verification Successful", description: response.message || "Your email has been verified!" });
-      // Optionally, redirect to login or home
-      // navigate('/login'); // You might need to import useNavigate
-    } else if (response && response.message) {
+    if (response?.success) {
+      toast({ title: "Verification Successful", description: response.message || "Your email is verified!" });
+    } else if (response?.message) {
       toast({ title: "Verification Failed", description: response.message, variant: "destructive" });
     }
     setIsLoading(false);
@@ -104,93 +83,136 @@ const Register = () => {
 
   const handleResendOtp = async () => {
     setIsLoading(true);
-    // Rebuild userData for resend to include address in expected shape
     const { confirmPassword, ...rest } = formData;
-    const userData = {
-      ...rest,
-      email: registrationEmail,
-      address: {
-        street: formData.address.street || '',
-        city: formData.address.city || '',
-        state: formData.address.state || '',
-        zipCode: formData.address.zipCode || '',
-      }
-    };
-    const response = await authRegister(userData); // Call register again to resend OTP
-
-    if (response && response.success) {
-      toast({ title: "OTP Resent", description: response.message || "A new OTP has been sent to your email." });
-    } else if (response && response.message) {
+    const userData = { ...rest, email: registrationEmail, address: { ...formData.address } };
+    const response = await authRegister(userData);
+    if (response?.success) {
+      toast({ title: "OTP Resent", description: response.message || "A new OTP has been sent." });
+    } else if (response?.message) {
       toast({ title: "Error Resending OTP", description: response.message, variant: "destructive" });
     }
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="pb-6">
-          <CardTitle>{step === 'register' ? 'Create Account' : 'Verify Your Email'}</CardTitle>
-          <CardDescription>
-            {step === 'register' ? 'Join our network of artisans and buyers.' : 'An OTP has been sent to your email. Please enter it below.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step === 'register' ? (
-            <>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <RadioGroup value={formData.role} onValueChange={(val) => handleInputChange('role', val)} className="grid grid-cols-2 gap-4 mb-6">
-                <div><RadioGroupItem value="artisan" id="artisan" className="peer sr-only" /><Label htmlFor="artisan" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary">Artisan</Label></div>
-                <div><RadioGroupItem value="buyer" id="buyer" className="peer sr-only" /><Label htmlFor="buyer" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary">Buyer</Label></div>
-              </RadioGroup>
-              <div className="space-y-2"><Label htmlFor="name">Full Name</Label><Input id="name" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} required /></div>
-              {formData.role === 'supplier' && <div className="space-y-2"><Label htmlFor="businessName">Business Name</Label><Input id="businessName" value={formData.businessName} onChange={(e) => handleInputChange('businessName', e.target.value)} required /></div>}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} required />
-                {emailError && <p className="text-destructive text-sm mt-1">{emailError}</p>}
-              </div>
-              <div className="space-y-2"><Label>Address</Label><Input placeholder="Street" value={formData.address.street} onChange={(e) => handleInputChange('address.street', e.target.value)} required />
-                <div className="grid grid-cols-3 gap-2"><Input placeholder="City" value={formData.address.city} onChange={(e) => handleInputChange('address.city', e.target.value)} required /><Input placeholder="State" value={formData.address.state} onChange={(e) => handleInputChange('address.state', e.target.value)} required /><Input placeholder="Zip" value={formData.address.zipCode} onChange={(e) => handleInputChange('address.zipCode', e.target.value)} required /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} required /></div>
-                <div className="space-y-2"><Label htmlFor="confirmPassword">Confirm Password</Label><Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={(e) => handleInputChange('confirmPassword', e.target.value)} required /></div>
-              </div>
-              <Button type="submit" className="w-full mt-6" disabled={isLoading || emailError}> {/* Disable if email has format error */}
-                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Create Account
-              </Button>
-            </form>
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-pink-50 to-yellow-50">
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-10 p-6 max-w-6xl w-full">
+
+        {/* LEFT: Illustration + tagline */}
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left max-w-lg mb-6 lg:mb-0">
+          <div className="relative w-64 h-64">
+            <div className="absolute -left-6 top-1/2 -translate-y-1/2 space-y-2 pointer-events-none">
+              <span className="block w-24 h-1 rounded-full bg-red-400/80 animate-trail" style={{ animationDelay: '0ms' }} />
+              <span className="block w-16 h-1 rounded-full bg-red-300/70 animate-trail" style={{ animationDelay: '140ms' }} />
+              <span className="block w-10 h-1 rounded-full bg-red-200/60 animate-trail" style={{ animationDelay: '280ms' }} />
+            </div>
+            <div className="relative w-64 h-64 animate-ride-in">
+              <div className="relative w-full h-full rounded-full p-2 bg-gradient-to-tr from-white/60 to-white/20 shadow-2xl">
+                <img
+                  src={riderImg}
+                  alt="Delivery Rider"
+                  className="rounded-full border-4 border-white shadow-lg w-full h-full object-cover"
+                  draggable={false}
+                />
+                <div className="absolute inset-0 rounded-full pointer-events-none">
+                  <div className="absolute -inset-6 rounded-full blur-2xl bg-orange-300/30 animate-pulse" />
+                </div>
               </div>
             </div>
-            
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link to="/login" className="underline">
-                Sign in
-              </Link>
-            </div>
-            </>
-          ) : (
-            <form onSubmit={handleOtpSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">OTP</Label>
-                <Input id="otp" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength={6} />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>{isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Verify OTP</Button>
-              <Button type="button" variant="outline" className="w-full" onClick={handleResendOtp} disabled={isLoading}>Resend OTP</Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+          <h1 className="text-4xl font-bold mt-6 mb-2 text-gray-800">Order Food</h1>
+          <h2 className="text-4xl font-extrabold text-red-600 mb-4">Fast Delivery</h2>
+          <p className="text-gray-600 max-w-sm">
+            Sign up to get started with quick and delightful deliveries — intuitive dashboard for Arisans & Buyers.
+          </p>
+        </div>
+        {/* RIGHT: Register Card */}
+        <Card className="
+   w-full max-w-xl
+  flex-1
+  shadow-2xl 
+  bg-white/50 
+  backdrop-blur-2xl 
+  border border-white/30 
+  rounded-2xl 
+  relative 
+  overflow-hidden
+  transition-all
+  hover:scale-105
+  animate-card-pop
+">
+  <div className="absolute -z-10 hidden lg:block -left-24 top-8 w-90 h-40 rounded-full bg-red-200/30 blur-3xl" />
+  <CardHeader className="pb-2">
+    <CardTitle className="text-2xl">{step === 'register' ? 'Create Account' : 'Verify Your Email'}</CardTitle>
+    <CardDescription className="text-sm">
+      {step === 'register' 
+        ? 'Join our network of vendors and suppliers.' 
+        : 'An OTP has been sent to your email. Please enter it below.'}
+    </CardDescription>
+  </CardHeader>
+
+  <CardContent className="space-y-3">
+    {step === 'register' ? (
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div className={`flex items-center justify-center gap-2 rounded-md border p-2 cursor-pointer select-none text-sm ${formData.role === 'vendor' ? 'border-red-500 bg-red-50 shadow-sm' : 'border-transparent bg-white/60'}`} 
+               onClick={() => handleInputChange('role', 'vendor')}>
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            <span>Buyer</span>
+          </div>
+          <div className={`flex items-center justify-center gap-2 rounded-md border p-2 cursor-pointer select-none text-sm ${formData.role === 'supplier' ? 'border-red-500 bg-red-50 shadow-sm' : 'border-transparent bg-white/60'}`} 
+               onClick={() => handleInputChange('role', 'supplier')}>
+            <div className="w-3 h-3 rounded-full bg-amber-400" />
+            <span>Artisan</span>
+          </div>
+        </div>
+
+        <div className="space-y-1"><Label htmlFor="name">Full Name</Label><Input id="name" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} required /></div>
+        {formData.role === 'supplier' && <div className="space-y-1"><Label htmlFor="businessName">Business Name</Label><Input id="businessName" value={formData.businessName} onChange={(e) => handleInputChange('businessName', e.target.value)} required /></div>}
+
+        <div className="space-y-1">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} required />
+          {emailError && <p className="text-destructive text-xs mt-0.5">{emailError}</p>}
+        </div>
+
+        <div className="space-y-1">
+          <Label>Address</Label>
+          <Input placeholder="Street" value={formData.address.street} onChange={(e) => handleInputChange('address.street', e.target.value)} required />
+          <div className="grid grid-cols-3 gap-1 ">
+            <Input placeholder="City" value={formData.address.city} onChange={(e) => handleInputChange('address.city', e.target.value)} required />
+            <Input placeholder="State" value={formData.address.state} onChange={(e) => handleInputChange('address.state', e.target.value)} required />
+            <Input placeholder="Zip" value={formData.address.zipCode} onChange={(e) => handleInputChange('address.zipCode', e.target.value)} required />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1"><Label htmlFor="password">Password</Label><Input id="password" type="password" value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} required /></div>
+          <div className="space-y-1"><Label htmlFor="confirmPassword">Confirm Password</Label><Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={(e) => handleInputChange('confirmPassword', e.target.value)} required /></div>
+        </div>
+
+        <Button type="submit" className="w-full" disabled={isLoading || emailError}>
+          {isLoading && <Loader2 className="w-4 h-1 animate-spin" />} Create Account
+        </Button>
+
+        <div className="text-center text-xs">
+          Already have an account?{" "}
+          <Link to="/login" className="underline font-medium text-red-600">Sign in</Link>
+        </div>
+      </form>
+    ) : (
+      <form onSubmit={handleOtpSubmit} className="space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="otp">OTP</Label>
+          <Input id="otp" type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength={6} />
+        </div>
+        <Button type="submit" className="w-full" disabled={isLoading}>{isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Verify OTP</Button>
+        <Button type="button" variant="outline" className="w-full" onClick={handleResendOtp} disabled={isLoading}>Resend OTP</Button>
+      </form>
+    )}
+  </CardContent>
+</Card>
+      </div>
     </div>
   );
 };

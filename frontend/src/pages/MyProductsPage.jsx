@@ -3,10 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMyProducts, deleteProduct } from '../services/productService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Package, Pencil, Trash } from 'lucide-react'; // Import Pencil and Trash icons
+import { Loader2, Package, Pencil, Trash } from 'lucide-react';
 import AddProductDialog from '@/components/AddProductDialog';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button'; // Import Button
+import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,16 +16,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'; // Import AlertDialog components
-
-// Added a comment to trigger file change and re-evaluation
+} from '@/components/ui/alert-dialog';
 
 const MyProductsPage = () => {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient(); // Initialize queryClient
+  const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
-  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false); // New state for AddProductDialog
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
 
   const { data: productsData, isLoading: isLoadingProducts, isError: isProductsError } = useQuery({
     queryKey: ['myProducts'],
@@ -42,66 +38,96 @@ const MyProductsPage = () => {
   const handleDeleteClick = async (productId) => {
     try {
       await deleteProduct(productId);
-      queryClient.invalidateQueries(['myProducts']); // Invalidate to refetch products
-      // Optionally, show a success toast
+      queryClient.invalidateQueries(['myProducts']);
     } catch (error) {
       console.error('Error deleting product:', error);
-      // Optionally, show an error toast
     }
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <header className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
+    <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Products</h1>
-          <p className="text-muted-foreground">Manage all products you have listed.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">My Products</h1>
+          <p className="text-gray-500 mt-1">Manage all products you have listed.</p>
         </div>
-        <Button onClick={() => setIsAddProductDialogOpen(true)} className="cursor-pointer">Add New Product</Button> {/* Button to open AddProductDialog */}
+        <Button
+          onClick={() => setIsAddProductDialogOpen(true)}
+          className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white shadow-lg transition-all transform hover:scale-105"
+        >
+          Add New Product
+        </Button>
       </header>
 
+      {/* Add Product Dialog */}
       <AddProductDialog
         isOpen={isAddProductDialogOpen}
         onClose={() => setIsAddProductDialogOpen(false)}
       />
 
-      <Card>
+      {/* Product List */}
+      <Card className="shadow-xl rounded-2xl hover:shadow-2xl transition-shadow bg-white border border-gray-100">
         <CardHeader>
-          <CardTitle>Product List</CardTitle>
-          <CardDescription>All products you have listed.</CardDescription>
+          <CardTitle className="text-2xl font-semibold text-gray-900">Product List</CardTitle>
+          <CardDescription className="text-gray-500">All products you have listed.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoadingProducts ? (
-            <div className="flex justify-center p-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
+            <div className="flex justify-center p-6">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
             </div>
           ) : isProductsError ? (
-            <p className="text-destructive text-center py-4">Error loading products.</p>
+            <p className="text-center text-red-600 py-6">Error loading products.</p>
           ) : myProducts.length > 0 ? (
-            <Table>
+            <Table className="table-auto border-separate border-spacing-0 w-full rounded-lg overflow-hidden">
               <TableHeader>
-                <TableRow>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">Actions</TableHead> {/* New column for actions */}
+                <TableRow className="bg-gray-50 text-gray-700 uppercase text-sm tracking-wide">
+                  <TableHead className="px-4 py-3 text-left">Image</TableHead>
+                  <TableHead className="px-4 py-3 text-left">Name</TableHead>
+                  <TableHead className="px-4 py-3 text-right">Price</TableHead>
+                  <TableHead className="px-4 py-3 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {myProducts.map((product) => (
-                  <TableRow key={product._id}>{/* Removed onClick from TableRow */}
-                    <TableCell>
-                      {product.imageUrl && <img src={product.imageUrl} alt={product.name} className="w-16 h-16 object-cover rounded-md" />}
+                  <TableRow
+                    key={product._id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <TableCell className="px-4 py-3">
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded-xl shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 shadow-inner">
+                          N/A
+                        </div>
+                      )}
                     </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell className="text-right">₹{product.pricePerKg}/{product.unit}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => handleEditClick(product)}>
+                    <TableCell className="px-4 py-3 font-medium text-gray-900">{product.name}</TableCell>
+                    <TableCell className="px-4 py-3 text-right text-gray-700 font-semibold">
+                      ₹{product.pricePerKg}/{product.unit}
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="hover:bg-gray-100 hover:scale-105 transition-transform"
+                        onClick={() => handleEditClick(product)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm" className="ml-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="hover:scale-105 transition-transform"
+                          >
                             <Trash className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -115,7 +141,9 @@ const MyProductsPage = () => {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteClick(product._id)}>Continue</AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDeleteClick(product._id)}>
+                              Continue
+                            </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -125,15 +153,13 @@ const MyProductsPage = () => {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center text-muted-foreground py-4">
-              <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p>You haven't added any products yet.</p>
+            <div className="text-center text-gray-400 py-16">
+              <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg">You haven't added any products yet.</p>
             </div>
           )}
         </CardContent>
       </Card>
-
-      
 
       {/* Edit Product Dialog */}
       {productToEdit && (

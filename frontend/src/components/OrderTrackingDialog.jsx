@@ -63,71 +63,79 @@ const OrderTrackingDialog = ({ orderId, isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-    <DialogContent className="bg-white text-black dark:bg-gray-800 dark:text-white">
-        <DialogHeader>
-          <DialogTitle>Track Order #{orderId?.substring(0, 8)}</DialogTitle>
-          <DialogDescription>Status updates for your group order.</DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
-          {isLoading || isLoadingSummary || !isMapDataAvailable ? (
-            <div className="flex justify-center items-center h-64"><p>Loading map and tracking details...</p></div>
-          ) : isError ? (
-            <p className="text-destructive text-center">Could not fetch tracking details.</p>
-          ) : trackingInfo ? (
-            <div className="space-y-4">
-              <div className="h-64 mb-4 relative">
-                {mapError ? (
-                  <p className="text-destructive">{mapError}</p>
-                ) : !artisanLocation ? (
-                  <div className="flex justify-center items-center h-full"><p>Artisan location not available for tracking. Please contact the artisan.</p></div>
-                ) : !userLocation ? (
-                  <div className="flex justify-center items-center h-full"><p>Your location is not available. Please enable geolocation or set your address in your profile to see the route.</p></div>
-                ) : (center && typeof center.lat === 'number' && typeof center.lng === 'number') ? (
-                  <MapContainer center={[center.lat, center.lng]} zoom={8} style={{ height: '100%', width: '100%' }}>
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    {(userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number' &&
-                      artisanLocation && typeof artisanLocation.lat === 'number' && typeof artisanLocation.lng === 'number') && (
-                      <RoutingMachine
-                        start={[userLocation.lat, userLocation.lng]}
-                        end={[artisanLocation.lat, artisanLocation.lng]}
-                        onRouteFound={handleRouteFound}
-                        // apiKey={googleMapsApiKey} // Pass the API key here
-                      />
-                    )}
-                  </MapContainer>
-                ) : (
-                  <div className="flex justify-center items-center h-full"><p>Map data not fully available. Ensure both your location and artisan location are set.</p></div>
-                )}
-                {routeSummary && (
-                  <div className="absolute bottom-2 left-2 bg-white p-2 rounded shadow-lg text-xs">
-                    <p><b>Distance:</b> {(routeSummary.totalDistance / 1000).toFixed(2)} km</p>
-                    <p><b>Estimated Time:</b> {Math.round(routeSummary.totalTime / 60)} minutes</p>
-                  </div>
-                )}
+  <DialogContent className="bg-gradient-to-bl from-cyan-50 via-white to-green-50 rounded-2xl shadow-2xl border p-6 max-w-2xl mx-auto">
+    <DialogHeader>
+      <DialogTitle className="text-xl sm:text-2xl font-bold text-cyan-700">Track Order #{orderId?.substring(0, 8)}</DialogTitle>
+      <DialogDescription className="text-gray-700">Status updates for your group order.</DialogDescription>
+    </DialogHeader>
+    {(isLoading || isLoadingSummary || !isMapDataAvailable) ? (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <Loader2 className="animate-spin text-cyan-600 w-8 h-8" />
+        <span className="text-cyan-600 font-semibold">Loading map and tracking details...</span>
+      </div>
+    ) : isError ? (
+      <span className="text-red-600 bg-red-50 font-semibold rounded p-3">Could not fetch tracking details.</span>
+    ) : trackingInfo ? (
+      <div className="space-y-6">
+        {mapError ? (
+          <span className="block text-orange-700 bg-orange-50 rounded-lg p-2 font-medium">{mapError}</span>
+        ) : !artisanLocation ? (
+          <span className="block text-red-700 bg-red-50 rounded-lg p-2 font-medium">Artisan location not available for tracking. Please contact the artisan.</span>
+        ) : !userLocation ? (
+          <span className="block text-yellow-800 bg-yellow-50 rounded-lg p-2 font-medium">Your location is not available. Please enable geolocation or set an address in profile.</span>
+        ) : (center && typeof center.lat === 'number' && typeof center.lng === 'number') ? (
+          <div className="bg-white/80 rounded-xl shadow-lg p-2 mb-3">
+            {/* Map area with glassmorphic backdrop */}
+            <MapContainer center={center} zoom={14} className="rounded-xl shadow w-full h-60" style={{ minHeight: '240px' }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <RoutingMachine start={[userLocation.lat, userLocation.lng]} end={[artisanLocation.lat, artisanLocation.lng]} onRouteFound={handleRouteFound} />
+              <Marker position={userLocation}>
+                <Tooltip direction="top">Your Location</Tooltip>
+              </Marker>
+              <Marker position={artisanLocation}>
+                <Tooltip direction="top">Artisan</Tooltip>
+              </Marker>
+            </MapContainer>
+            {routeSummary && (
+              <div className="flex gap-4 mt-4 items-center justify-center">
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-cyan-100 text-cyan-700 font-medium shadow">
+                  Distance: {(routeSummary.totalDistance / 1000).toFixed(2)} km
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium shadow">
+                  Estimated: {Math.round(routeSummary.totalTime / 60)} minutes
+                </span>
               </div>
-              <ul className="space-y-4">
-                {trackingInfo.events.map((event, index) => (
-                  <li key={index} className="flex items-start gap-4">
-                    <div>
-                      <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
-                        {event.status.includes('Confirmed') ? <CheckCircle className="text-primary"/> : <Clock className="text-muted-foreground"/>}
-                      </div>
-                    </div>
-                    <div>
-                        <p className="font-semibold">{event.status}</p>
-                        <p className="text-sm text-muted-foreground">{new Date(event.timestamp).toLocaleString()}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-           ) : <p className="text-center">No tracking information available.</p>}
+            )}
+          </div>
+        ) : (
+          <span className="text-orange-700 bg-orange-50 rounded-lg p-2 font-medium">
+            Map data not fully available. Ensure both your location and artisan location are set.
+          </span>
+        )}
+        <div className="pt-1 pb-2">
+          <ol className="relative border-l border-cyan-300 ml-2">
+            {trackingInfo.events.map((event, index) => (
+              <li key={index} className="mb-7 ml-5">
+                {event.status.includes('Confirmed') ? (
+                  <span className="absolute -left-4 flex items-center justify-center w-7 h-7 bg-green-100 border-2 border-green-400 rounded-full shadow"><CheckCircle className="w-5 h-5 text-green-600" /></span>
+                ) : (
+                  <span className="absolute -left-4 flex items-center justify-center w-7 h-7 bg-gray-100 border-2 border-cyan-400 rounded-full shadow"><Clock className="w-5 h-5 text-cyan-700" /></span>
+                )}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+                  <span className="font-bold text-cyan-700">{event.status}</span>
+                  <span className="text-xs sm:ml-3 text-gray-600">{new Date(event.timestamp).toLocaleString()}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    ) : (
+      <span className="text-gray-600 italic">No tracking information available.</span>
+    )}
+  </DialogContent>
+</Dialog>
+
   );
 };
 

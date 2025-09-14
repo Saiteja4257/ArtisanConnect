@@ -5,29 +5,45 @@ import { createDirectOrder } from '../services/orderService';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, ShoppingCart, IndianRupee, Loader2, Package, MapPin } from 'lucide-react';
-
-import { useAuth } from '../context/AuthContext'; // Import useAuth
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
-import { useToast } from '@/components/ui/use-toast'; // Import useToast
+import {
+  Search,
+  ShoppingCart,
+  IndianRupee,
+  Loader2,
+  Package,
+  MapPin,
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
 
 const categories = ['All', 'Vegetables', 'Grains', 'Oils', 'Spices', 'Dairy', 'Pulses'];
 
-// Helper function to calculate distance between two lat/lng points (Haversine formula)
 const haversineDistance = (coords1, coords2) => {
-  const toRad = (x) => x * Math.PI / 180;
-  const R = 6371; // Radius of Earth in kilometers
-
+  const toRad = (x) => (x * Math.PI) / 180;
+  const R = 6371;
   const dLat = toRad(coords2.lat - coords1.lat);
   const dLon = toRad(coords2.lng - coords1.lng);
-
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(coords1.lat)) * Math.cos(toRad(coords2.lat)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in km
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(coords1.lat)) *
+      Math.cos(toRad(coords2.lat)) *
+      Math.sin(dLon / 2) ** 2;
+  return R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 const Products = () => {
@@ -36,34 +52,25 @@ const Products = () => {
   const [showPreparedOnly, setShowPreparedOnly] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [userLocation, setUserLocation] = useState(null); // NEW: User's current location
-  const [locationEnabled, setLocationEnabled] = useState(false); // NEW: Toggle for location filtering
-  const [minPrice, setMinPrice] = useState(''); // NEW: Min price filter
-  const [maxPrice, setMaxPrice] = useState(''); // NEW: Max price filter
-  const [minRating, setMinRating] = useState('none'); // NEW: Min rating filter, default to 'none'
-  const [sortBy, setSortBy] = useState('none'); // NEW: Sort by option, default to 'none'
-  const [sortOrder, setSortOrder] = useState('asc'); // NEW: Sort order option
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minRating, setMinRating] = useState('none');
+  const [sortBy, setSortBy] = useState('none');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [targetCurrency, setTargetCurrency] = useState('INR');
 
-  const navigate = useNavigate(); // Initialize useNavigate
-  const { user } = useAuth(); // Get current user
-  const { toast } = useToast(); // NEW: Initialize toast
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (locationEnabled && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          // Optionally, inform the user that location could not be retrieved
-          setUserLocation(null);
-          setLocationEnabled(false); // Disable if error
-        }
+        (pos) =>
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => setLocationEnabled(false)
       );
     } else if (!locationEnabled) {
       setUserLocation(null);
@@ -71,110 +78,116 @@ const Products = () => {
   }, [locationEnabled]);
 
   const { data: productsData, isLoading, isError } = useQuery({
-    queryKey: ['products', { prepared: showPreparedOnly, search: searchTerm, minPrice, maxPrice, minRating, sortBy, sortOrder, targetCurrency }],
-    queryFn: () => {
-      const params = {
+    queryKey: [
+      'products',
+      {
         prepared: showPreparedOnly,
         search: searchTerm,
-        minPrice: minPrice,
-        maxPrice: maxPrice,
-        minRating: minRating === 'none' ? undefined : minRating, // Don't send if 'none'
-        sortBy: sortBy === 'none' ? undefined : sortBy, // Don't send if 'none'
-        sortOrder: sortBy === 'none' ? undefined : sortOrder, // Only send sortOrder if sortBy is not 'none'
-        targetCurrency: targetCurrency, // Add targetCurrency to params
-      };
-      return getProducts(params);
-    },
+        minPrice,
+        maxPrice,
+        minRating,
+        sortBy,
+        sortOrder,
+        targetCurrency,
+      },
+    ],
+    queryFn: () =>
+      getProducts({
+        prepared: showPreparedOnly,
+        search: searchTerm,
+        minPrice,
+        maxPrice,
+        minRating: minRating === 'none' ? undefined : minRating,
+        sortBy: sortBy === 'none' ? undefined : sortBy,
+        sortOrder: sortBy === 'none' ? undefined : sortOrder,
+        targetCurrency,
+      }),
   });
-  let products = productsData?.data || [];
 
-  // NEW: Sort products by distance if location is enabled and available
+  let products = productsData?.data || [];
   if (locationEnabled && userLocation) {
-    products = products.map(product => {
-      const artisanCoords = product.artisan?.address?.coords;
-      if (artisanCoords) {
-        const distance = haversineDistance(userLocation, artisanCoords);
-        return { ...product, distance };
-      }
-      return { ...product, distance: Infinity }; // Products without coords go to the end
-    }).sort((a, b) => a.distance - b.distance);
+    products = products
+      .map((p) => {
+        const coords = p.artisan?.address?.coords;
+        return coords
+          ? { ...p, distance: haversineDistance(userLocation, coords) }
+          : { ...p, distance: Infinity };
+      })
+      .sort((a, b) => a.distance - b.distance);
   }
 
-  const filteredProducts = products.filter(product => {
-    // Category filter is now applied after fetching, as backend handles other filters
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    return matchesCategory;
-  });
+  const filteredProducts = products.filter(
+    (p) => selectedCategory === 'All' || p.category === selectedCategory
+  );
 
-  const handleOrderNow = async (product) => {
+  const handleOrderNow = async (p) => {
     try {
-      await createDirectOrder(product._id, 1); // Default quantity of 1
-      toast({ title: "Order Placed!", description: `${product.name} added to your orders.` });
-    } catch (error) {
-      toast({ title: "Order Failed", description: error.response?.data?.msg || "Could not place order.", variant: "destructive" });
+      await createDirectOrder(p._id, 1);
+      toast({ title: 'Order Placed!', description: `${p.name} added to your orders.` });
+    } catch (err) {
+      toast({
+        title: 'Order Failed',
+        description: err.response?.data?.msg || 'Could not place order.',
+        variant: 'destructive',
+      });
     }
   };
 
   if (isError) {
-    return <div className="text-center py-12 text-destructive">Error fetching products.</div>;
+    return (
+      <div className="flex justify-center items-center h-screen text-red-600 text-lg">
+        Error fetching products.
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Browse Products</h1>
-          <p className="text-muted-foreground">Find quality raw materials from verified artisans.</p>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 relative overflow-x-hidden">
+      {/* Decorative blobs */}
+      <div className="absolute top-0 left-0 w-80 h-80 bg-green-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-yellow-200/30 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Heading */}
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800">
+            Browse <span className="text-green-700">Products</span>
+          </h1>
+          <p className="mt-3 text-gray-600 text-base sm:text-lg">
+            Discover high-quality ingredients & supplies from verified artisans.
+          </p>
         </div>
 
-        <div className="mb-8 space-y-4">
+        {/* Filters */}
+        <div className="space-y-5 bg-white rounded-xl p-6 shadow-sm border mb-12">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search by product or artisan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-white border-gray-200"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {/* {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </Button>
-            ))} */}
-            {/* <Button
-              key="prepared"
-              variant={showPreparedOnly ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setShowPreparedOnly(v => !v)}
-            >
-              Prepared Hub
-            </Button> */}
-            {/* NEW: Location Filter Button */}
+
+          <div className="flex flex-wrap gap-3 items-center">
             <Button
               variant={locationEnabled ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setLocationEnabled(v => !v)}
+              onClick={() => setLocationEnabled((v) => !v)}
             >
-              <MapPin className="w-4 h-4 mr-2" />
-              {locationEnabled ? 'Location Filter ON' : 'Location Filter OFF'}
+              <MapPin className="w-4 h-4 mr-1" />
+              {locationEnabled ? 'Location ON' : 'Location OFF'}
             </Button>
           </div>
 
-          {/* NEW: Price Range Filter */}
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2 items-center">
             <Input
               type="number"
               placeholder="Min Price"
               value={minPrice}
               onChange={(e) => setMinPrice(e.target.value)}
-              className="w-32"
+              className="w-32 bg-white border-gray-200"
             />
             <span>-</span>
             <Input
@@ -182,47 +195,48 @@ const Products = () => {
               placeholder="Max Price"
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
-              className="w-32"
+              className="w-32 bg-white border-gray-200"
             />
           </div>
 
-          {/* NEW: Min Rating Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Min. Artisan Rating:</span>
-            <Select value={minRating} onValueChange={setMinRating}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Rating" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Any</SelectItem>
-                <SelectItem value="1">1 Star</SelectItem>
-                <SelectItem value="2">2 Stars</SelectItem>
-                <SelectItem value="3">3 Stars</SelectItem>
-                <SelectItem value="4">4 Stars</SelectItem>
-                <SelectItem value="5">5 Stars</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="flex gap-4 flex-wrap items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Min. Rating:</span>
+              <Select value={minRating} onValueChange={setMinRating}>
+                <SelectTrigger className="w-[110px] bg-white border-gray-200">
+                  <SelectValue placeholder="Rating" />
+                </SelectTrigger>
+                <SelectContent className="bg-white shadow-md rounded-md z-50">
+                  <SelectItem value="none">Any</SelectItem>
+                  <SelectItem value="1">1 Star</SelectItem>
+                  <SelectItem value="2">2 Stars</SelectItem>
+                  <SelectItem value="3">3 Stars</SelectItem>
+                  <SelectItem value="4">4 Stars</SelectItem>
+                  <SelectItem value="5">5 Stars</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* NEW: Sorting Options */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort By:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Sort By" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="price">Price</SelectItem>
-                <SelectItem value="rating">Rating</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Sort:</span>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[130px] bg-white border-gray-200">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent className="bg-white shadow-md rounded-md z-50">
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="rating">Rating</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {sortBy !== 'none' && (
               <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger className="w-[100px]">
+                <SelectTrigger className="w-[100px] bg-white border-gray-200">
                   <SelectValue placeholder="Order" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white shadow-md rounded-md z-50">
                   <SelectItem value="asc">Asc</SelectItem>
                   <SelectItem value="desc">Desc</SelectItem>
                 </SelectContent>
@@ -231,58 +245,88 @@ const Products = () => {
           </div>
         </div>
 
+        {/* Product cards */}
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin" /></div>
+          <div className="flex justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-green-700" />
+          </div>
         ) : filteredProducts.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => (
-              <Card className="hover:shadow-lg transition-shadow flex flex-col h-full" key={product._id}>
-                <Link to={`/products/${product._id}`} className="block">
+              <Card
+                key={product._id}
+                className="flex flex-col h-full overflow-hidden rounded-xl bg-white border hover:shadow-lg transition-shadow"
+              >
+                <Link to={`/products/${product._id}`}>
                   {product.imageUrl && (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover rounded-t-lg" />
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="h-48 w-full object-cover"
+                    />
                   )}
-                  <CardHeader>
+                  <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
+                      <CardTitle className="text-lg font-semibold text-gray-800">
+                        {product.name}
+                      </CardTitle>
                       <Badge variant="secondary">{product.category}</Badge>
                     </div>
-                    <CardDescription>
-                                            by {product.artisan ? (
+                    <CardDescription className="text-sm text-gray-500">
+                      by{' '}
+                      {product.artisan ? (
                         <span
-                          className="text-primary underline cursor-pointer"
+                          className="text-green-700 underline cursor-pointer"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent click from propagating to the outer Link
+                            e.preventDefault();
+                            e.stopPropagation();
                             navigate(`/artisans/${product.artisan._id}`);
                           }}
                         >
                           {product.artisan.businessName || product.artisan.name}
                         </span>
-                      ) : 'Unknown'}
-                      {typeof product.distance === 'number' && product.distance != null && !isNaN(product.distance) && isFinite(product.distance) && userLocation && (
-                        <span className="ml-2 text-xs text-muted-foreground">({product.distance.toFixed(1)} km)</span>
+                      ) : (
+                        'Unknown'
                       )}
+                      {product.distance &&
+                        isFinite(product.distance) &&
+                        userLocation && (
+                          <span className="ml-2 text-xs text-gray-500">
+                            ({product.distance.toFixed(1)} km)
+                          </span>
+                        )}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow flex flex-col justify-between space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-baseline space-x-1">
-                        <IndianRupee className="w-4 h-4 text-primary" />
-                        <span className="text-2xl font-bold text-primary">
-                          {product.convertedCurrency ? `${product.convertedCurrency} ${product.pricePerKg.toFixed(2)}` : `₹${product.pricePerKg}`}
+                  <CardContent className="flex flex-col justify-between flex-1 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-1">
+                        <IndianRupee className="w-4 h-4 text-green-700" />
+                        <span className="text-xl font-bold text-green-700">
+                          {product.convertedCurrency
+                            ? `${product.convertedCurrency} ${product.pricePerKg.toFixed(2)}`
+                            : `₹${product.pricePerKg}`}
                         </span>
-                        <span className="text-muted-foreground">/{product.unit}</span>
+                        <span className="text-gray-500">/{product.unit}</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-muted-foreground">Min. Order</div>
-                        <div className="font-semibold">{product.minOrderQty} {product.unit}</div>
+                        <div className="text-xs text-gray-400">Min. Order</div>
+                        <div className="font-semibold text-gray-700">
+                          {product.minOrderQty} {product.unit}
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground flex-grow">{product.description}</p>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {product.description}
+                    </p>
                   </CardContent>
                 </Link>
+
                 {(!user || user.role !== 'supplier') && (
                   <CardContent className="pt-0">
-                    <Button className="w-full" onClick={() => { handleOrderNow(product); }}>
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                      onClick={() => handleOrderNow(product)}
+                    >
                       <ShoppingCart className="w-4 h-4 mr-2" />
                       Order Now
                     </Button>
@@ -292,18 +336,13 @@ const Products = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold">No products found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
+          <div className="text-center py-20">
+            <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700">No products found</h3>
+            <p className="text-gray-500">Try adjusting your search or filters.</p>
           </div>
         )}
       </div>
-      
-      {/* The JoinOrderDialog component will be rendered here */}
-      
-      
-     
     </div>
   );
 };

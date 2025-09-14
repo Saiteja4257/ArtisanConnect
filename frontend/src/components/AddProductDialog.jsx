@@ -121,93 +121,84 @@ const AddProductDialog = ({ isOpen, onClose, productToEdit }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogTrigger asChild>
-        {!productToEdit && (
-          <Button>
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Add New Product
-          </Button>
-        )}
-      </DialogTrigger>
-  <DialogContent className="sm:max-w-[425px] bg-green-50"> {/* Added bg-green-50 class */}
-        <DialogHeader>
-          <DialogTitle>{productToEdit ? "Edit Product" : "Add New Product"}</DialogTitle>
-          <DialogDescription>
-            {productToEdit ? "Make changes to your product details." : "Fill in the details below to list a new item in the marketplace."}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Product Name</Label>
-            <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pricePerKg">Price (per unit)</Label>
-              <Input id="pricePerKg" name="pricePerKg" type="number" value={formData.pricePerKg} onChange={handleChange} required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
-              <select id="unit" name="unit" value={formData.unit} onChange={handleChange} className="w-full h-10 border rounded-md px-2">
-                {units.map(u => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <select id="category" name="category" value={formData.category} onChange={handleChange} className="w-full h-10 border rounded-md px-2" required>
-                <option value="" disabled>Select category</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="minOrderQty">Min. Order Qty</Label>
-              <Input id="minOrderQty" name="minOrderQty" type="number" value={formData.minOrderQty} onChange={handleChange} required />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="availableQty">Available Quantity</Label>
-              <Input id="availableQty" name="availableQty" type="number" value={formData.availableQty} onChange={handleChange} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="image">Image</Label>
-              <Input id="image" name="image" type="file" accept="image/*" onChange={handleFile} />
-              {formData.imageUrl && !formData.image && (
-                <img src={formData.imageUrl} alt="Current Product Image" className="mt-2 w-24 h-24 object-cover rounded-md" />
-              )}
-            </div>
-          </div>
-           <div className="flex items-center space-x-2">
-            <Switch id="isPrepped" checked={formData.isPrepped} onCheckedChange={handleSwitchChange} />
-            <Label htmlFor="isPrepped">Is this a pre-prepared item? (e.g., batter)</Label>
-          </div>
-
-          {/* NEW: Shipping Zones and Cost */}
-          <div className="space-y-2">
-            <Label htmlFor="shippingZones">Shipping Zones (comma-separated)</Label>
-            <Input id="shippingZones" name="shippingZones" value={formData.shippingZones} onChange={handleChange} placeholder="e.g., North, South, East, West" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="shippingCost">Shipping Cost</Label>
-            <Input id="shippingCost" name="shippingCost" type="number" value={formData.shippingCost} onChange={handleChange} />
-          </div>
-
-          <DialogFooter>
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {productToEdit ? "Save Changes" : "Add Product"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+   <Dialog open={isOpen} onOpenChange={onClose}>
+  <DialogTrigger asChild>
+  
+  </DialogTrigger>
+  <DialogContent className="bg-gradient-to-r from-green-50 via-white to-gray-50 rounded-xl shadow-2xl border p-6 sm:p-8 w-full max-w-xl mx-auto">
+  <DialogHeader>
+    <DialogTitle className="text-xl sm:text-1xl font-bold text-green-700">
+      {productToEdit ? "Edit Product" : "Add New Product"}
+    </DialogTitle>
+    <DialogDescription className="text-gray-700  sm: text-sm sm:text-base">
+      {productToEdit ? "Make changes to your product details." : "Fill in the details below to list a new item in the marketplace."}
+    </DialogDescription>
+  </DialogHeader>
+  <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-1 text-sm sm:text-base">
+    <div>
+      <Label htmlFor="name" className="font-semibold text-gray-700">Product Name</Label>
+      <Input id="name" name="name" value={formData.name} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" required />
+    </div>
+    <div>
+      <Label htmlFor="description" className="font-semibold text-gray-700">Description</Label>
+      <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" required />
+    </div>
+    <div className="grid grid-cols-2 gap-2 sm:gap-2">
+      <div>
+        <Label htmlFor="pricePerKg" className="font-semibold text-gray-700">Price (per unit)</Label>
+        <Input id="pricePerKg" name="pricePerKg" value={formData.pricePerKg} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" required />
+      </div>
+      <div>
+        <Label htmlFor="unit" className="font-semibold text-gray-700">Unit</Label>
+        <select id="unit" name="unit" value={formData.unit} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition">
+          {units.map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
+      </div>
+    </div>
+    <div>
+      {/* <Label htmlFor="category" className="font-semibold text-gray-700">Category</Label>
+      <select id="category" name="category" value={formData.category} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition">
+        <option value="">Select category</option>
+        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+      </select> */}
+    </div>
+    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+      <div>
+        <Label htmlFor="minOrderQty" className="font-semibold text-gray-700">Min. Order Qty</Label>
+        <Input id="minOrderQty" name="minOrderQty" value={formData.minOrderQty} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" required />
+      </div>
+      <div>
+        <Label htmlFor="availableQty" className="font-semibold text-gray-700">Available Qty</Label>
+        <Input id="availableQty" name="availableQty" value={formData.availableQty} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" required />
+      </div>
+    </div>
+    <div>
+      <Label className="font-semibold text-gray-700">Image</Label>
+      <Input type="file" accept="image/*" onChange={handleFile} className="px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+      {formData.imageUrl && !formData.image && <img src={formData.imageUrl} alt="Preview" className="mt-2 rounded-lg w-24 h-24 sm:w-32 sm:h-32 object-cover border shadow" />}
+    </div>
+    <div className="flex items-center gap-2 sm:gap-3">
+      <Switch checked={formData.isPrepped} onCheckedChange={handleSwitchChange} className="focus:ring-2 focus:ring-green-400" />
+      <span className="text-gray-700 text-sm sm:text-base">Pre-prepared item? (e.g., batter)</span>
+    </div>
+    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+      <div>
+        <Label htmlFor="shippingZones" className="font-semibold text-gray-700">Shipping Zones</Label>
+        <Input id="shippingZones" name="shippingZones" value={formData.shippingZones} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+      </div>
+      <div>
+        <Label htmlFor="shippingCost" className="font-semibold text-gray-700">Shipping Cost</Label>
+        <Input id="shippingCost" name="shippingCost" value={formData.shippingCost} onChange={handleChange} className="mt-1 px-2 py-1 sm:px-3 sm:py-2 w-full rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-400 transition" />
+      </div>
+    </div>
+    <DialogFooter>
+      <Button type="submit" className="bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg shadow-lg hover:bg-green-800 transition font-semibold flex items-center justify-center gap-2 w-full">
+        {isPending && <Loader2 className="animate-spin w-4 h-4" />} {productToEdit ? "Save Changes" : "Add Product"}
+      </Button>
+    </DialogFooter>
+  </form>
+</DialogContent>
+</Dialog>
   );
 };
 
