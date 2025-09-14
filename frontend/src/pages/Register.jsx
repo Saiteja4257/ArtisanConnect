@@ -120,8 +120,8 @@ const Register = () => {
               </div>
             </div>
           </div>
-          <h1 className="text-4xl font-bold mt-6 mb-2 text-gray-800">Order Food</h1>
-          <h2 className="text-4xl font-extrabold text-red-600 mb-4">Fast Delivery</h2>
+          <h1 className="text-4xl font-bold mt-6 mb-2 text-gray-800">From Local Hands to</h1>
+          <h2 className="text-4xl font-extrabold text-red-600 mb-4">Global Hearts</h2>
           <p className="text-gray-600 max-w-sm">
             Sign up to get started with quick and delightful deliveries — intuitive dashboard for Arisans & Buyers.
           </p>
